@@ -1,3 +1,142 @@
-<!doctype html>
-<html lang="ja"><meta charset="utf-8"><title>studyroom</title>
-<body>hello</body></html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>自習室管理（分割版）</title>
+<link rel="stylesheet" href="./assets/styles.css" />
+<!-- jsQR（QR 読み取り用。scan.jsで利用） -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
+<!-- アプリ本体（ESM） -->
+<script type="module" src="./js/main.js"></script>
+</head>
+<body>
+
+<!-- ===== ① タイトルメニュー ===== -->
+<section id="view-title" class="container">
+  <div class="title">自習室管理</div>
+  <div class="login-inline">
+    <div class="inline-row">
+      <div class="inline-label">教室ID</div>
+      <input id="roomIdTop" class="inline-input" type="text" placeholder="教室IDを入力" />
+    </div>
+    <button class="login-btn" id="btnTitleLogin">ログイン</button>
+  </div>
+</section>
+
+<!-- ===== ② スライドショー設定 ===== -->
+<section id="view-ss" class="container hidden">
+  <div class="wrap">
+    <h1>スライドショー設定</h1>
+    <div class="card">
+      <div class="row"><label><input type="checkbox" id="ssEnabled"> 有効</label></div>
+      <div class="row"><label for="ssIdleMin">無操作で起動（分）</label><input id="ssIdleMin" type="number" min="1" max="120" step="1" /></div>
+      <div class="row"><label for="ssDuration">1枚の表示（秒）</label><input id="ssDuration" type="number" min="3" max="120" step="1" /></div>
+    </div>
+
+    <div class="card">
+      <div class="file-row">
+        <label>写真・動画（複数可）</label>
+        <input id="ssFiles" type="file" accept="image/*,video/mp4,video/webm" multiple />
+        <button id="clearMedia" class="btn ghost">選択を解除</button>
+      </div>
+      <div class="file-row" style="margin-top:8px">
+        <label>BGM（BGM管理アプリから選択）</label>
+        <button id="btnPickBgm" class="btn ghost">BGMを選ぶ</button>
+        <button id="clearBgm" class="btn ghost">選択を解除</button>
+        <span id="bgmNow" class="note">（未選択）</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn ghost" id="btnSsBack">戻る</button>
+      <button class="btn primary" id="btnSsSave">保存</button>
+      <button class="btn primary" id="btnSsTest">テスト</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ③ メインメニュー ===== -->
+<section id="view-main" class="container hidden">
+  <div class="wrap">
+    <h1 class="title">自習室管理メインメニュー</h1>
+    <button class="btn btn-start" id="btnGoRun">自習室開始</button>
+    <button class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
+    <button class="btn btn-ss" id="btnGoSs">スライドショー設定</button>
+    <div class="row row-pw">
+      <label>ロック解除パスワード</label>
+      <input id="unlockPwMain" type="text" maxlength="4" pattern="[0-9]*" inputmode="numeric" />
+    </div>
+  </div>
+</section>
+
+<!-- ===== ④ レイアウト作成 ===== -->
+<section id="view-layout" class="container hidden">
+  <button class="back" id="btnBackFromLayout">メインメニューに戻る</button>
+  <div class="wrap">
+    <h1>自習室レイアウト作成</h1>
+    <input id="roomName" class="room-name" placeholder="自習室の名称を入力" />
+    <div class="grid"><div id="cells" class="cells" role="grid" aria-label="レイアウト 10×10"></div></div>
+    <div class="toolbar">
+      <button id="allWall" class="ghost">全て壁</button>
+      <button id="allHall" class="ghost">全て廊下</button>
+      <button id="saveBtn">名前を付けて保存</button>
+      <button id="openBtn" class="ghost">ファイルを開く</button>
+      <input id="fileOpen" type="file" accept=".json,application/json" style="display:none" />
+    </div>
+    <div class="hint">左クリック：壁→廊下→入口／長押し：座席＋番号</div>
+  </div>
+</section>
+
+<!-- ===== ⑤ 自習室開始（運用） ===== -->
+<section id="view-run" class="container hidden">
+  <div class="topbar">
+    <h3 id="runRoomTitle" class="title">自習室</h3>
+    <button class="btn-back" id="btnBackFromRun">メインメニューに戻る</button>
+  </div>
+  <div class="root">
+    <section class="left">
+      <div id="liveWrap" class="live-wrap"><div id="liveGrid" class="live-grid"></div></div>
+      <div class="legend">
+        <span class="box" style="background:#4fc3f7"></span><span class="lbl">空席</span>
+        <span class="box" style="background:#ffc0cb"></span><span class="lbl">利用中</span>
+      </div>
+    </section>
+    <section class="right">
+      <div class="clock"><div id="dateText" class="date">----/--/--</div><div id="timeText" class="time">--:--</div></div>
+      <button class="btn-big btn-enter" id="btnOpenEnter">入 室</button>
+      <button class="btn-big btn-leave" id="btnOpenLeave">退 室</button>
+    </section>
+  </div>
+</section>
+
+<!-- ===== スライドショー オーバーレイ ===== -->
+<div id="ssOverlay"><div id="ssStage"><div id="ssLayerA" class="ssLayer"></div><div id="ssLayerB" class="ssLayer"></div></div></div>
+
+<!-- ===== BGM ピッカーダイアログ ===== -->
+<div id="bgmPicker" class="dialog" role="dialog" aria-modal="true" aria-label="BGMを選択">
+  <div class="box">
+    <div class="header">
+      <div class="title">BGMを選択（BGM管理アプリ）</div>
+      <div id="bgmPickMsg" class="muted"></div>
+    </div>
+    <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center">
+      <button id="bgmReload" class="btn">更新</button>
+      <span class="note">ダブルクリック、または「試聴」で再生</span>
+    </div>
+    <div style="max-height:50vh;overflow:auto;border:1px solid #333;border-radius:10px">
+      <table>
+        <thead><tr><th>Title</th><th style="width:200px">DATE</th><th style="width:120px" class="right">SIZE</th><th style="width:120px" class="center">操作</th></tr></thead>
+        <tbody id="bgmTbody"><tr><td colspan="4" class="center muted">読み込み中…</td></tr></tbody>
+      </table>
+    </div>
+    <div style="margin-top:8px"><audio id="bgmPreview" controls preload="none" style="width:100%"></audio></div>
+    <div class="btns" style="margin-top:10px">
+      <button id="bgmCancel" class="btn">キャンセル</button>
+      <button id="bgmOk" class="btn primary">決 定</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
