@@ -45,7 +45,12 @@
   #view-ss .btn{border:none;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer}
   #view-ss .btn.ghost{background:#1b1b1b;color:#fff;border:1px solid var(--border)}
   #view-ss .btn.primary{background:#fff;color:#000}
-  #view-ss .file-row{display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
+  #view-ss .file-row{
+  display:grid;
+  grid-template-columns: 12em 1fr auto; /* ラベル / 主ボタン(=ファイル選択 or BGMを選ぶ) / 解除ボタン */
+  gap:8px;
+  align-items:center;
+}
 #view-ss .file-row input[type="file"]{flex:1;min-width:0}
   #view-ss .note{color:#9aa0a6}
 
@@ -279,11 +284,12 @@
         <button id="clearMedia" class="btn ghost">選択を解除</button>
       </div>
       <div class="file-row" style="margin-top:8px">
-        <label>BGM</label>
-        <button id="btnPickBgm" class="btn ghost">BGMを選ぶ</button>
-        <button id="clearBgm" class="btn ghost">選択を解除</button>
-        <span id="bgmNow" class="note">（未選択）</span>
-      </div>
+  <label>BGM（1つ / BGM管理アプリから選択）</label>
+  <span class="note">選択中：</span>
+  <span id="bgmNow" class="note">（未選択）</span>
+  <button id="btnPickBgm" class="btn ghost">BGMを選ぶ</button>
+  <button id="clearBgm" class="btn ghost">選択を解除</button>
+</div>
     </div>
 
     <div class="row">
@@ -1139,7 +1145,7 @@ function loadSsSettingsUI(){
 }
 function updateBgmNow(){
   const el=$('bgmNow');
-  el.textContent = ssBgmUrl ? `選択中：${ssBgmTitle || '(タイトルなし)'}` : '（未選択）';
+  el.textContent = ssBgmUrl ? (ssBgmTitle || '(タイトルなし)') : '（未選択）';
 }
 $('btnSsBack').addEventListener('click', gotoMain);
 $('btnSsSave').addEventListener('click', ()=>{
