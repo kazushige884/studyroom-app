@@ -3,23 +3,251 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>自習室管理（分割版）</title>
-<link rel="stylesheet" href="./assets/styles.css" />
-<!-- jsQR（QR 読み取り用。scan.jsで利用） -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
-<!-- アプリ本体（ESM） -->
-<script type="module" src="./js/main.js"></script>
+<title>自習室管理（統合版・ログ集約連携）</title>
+<style>
+  :root{
+    --bg:#000; --text:#eaeaea; --panel:#111; --border:#2a2a2a;
+    --blue:#4fc3f7; --navy:#0b2a6b; --pink:#ffc0cb; --red:#ff2d55;
+    --gap:4px; --cell:42px;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;}
+  .hidden{display:none !important}
+  .container{min-height:100%;padding:16px;box-sizing:border-box}
+
+  /* ===== ① タイトルメニュー ===== */
+  #view-title .title{font-size:100pt;margin:6vh 0 16px;text-align:center}
+  #view-title .login-inline{
+    margin:0 auto;display:flex;flex-direction:column;gap:18px;
+    background:#111;border:1px solid var(--border);border-radius:14px;
+    padding:16px 20px;width:min(92vw,900px);
+  }
+  #view-title .inline-row{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:center}
+  #view-title .inline-label{font-size:40pt;line-height:1;white-space:nowrap}
+  #view-title .inline-input{
+    font-size:40px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);
+    background:#0f0f0f;color:#fff;outline:none;width:100%;box-sizing:border-box
+  }
+  #view-title .login-btn{
+    margin-top:20px;align-self:center;font-size:20px;padding:12px 40px;
+    background:#fff;color:#000;border:none;border-radius:10px;cursor:pointer;font-weight:bold;
+    display:block;
+  }
+
+  /* ===== ② スライドショー設定 ===== */
+  #view-ss .wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  #view-ss h1{margin:0 0 8px}
+  #view-ss .card{background:#111;border:1px solid var(--border);border-radius:14px;padding:16px}
+  #view-ss .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  #view-ss label{min-width:12em}
+  #view-ss input[type="number"]{width:120px}
+  #view-ss input, #view-ss button{font-size:1.5em}
+  #view-ss .btn{border:none;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer}
+  #view-ss .btn.ghost{background:#1b1b1b;color:#fff;border:1px solid var(--border)}
+  #view-ss .btn.primary{background:#fff;color:#000}
+  #view-ss .file-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  #view-ss .note{color:#9aa0a6}
+
+  /* ===== ③ メインメニュー ===== */
+  #view-main .wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
+  #view-main .title{font-size:40pt;margin:0 0 12px;align-self:flex-start}
+  #view-main .btn{border:none;border-radius:14px;cursor:pointer;font-weight:800;display:block}
+  #view-main .btn-start{
+    font-size:60pt;background:var(--blue);color:#000;padding:20px 60px;margin:12px 0; width:auto;
+  }
+  #view-main .btn-layout{
+    font-size:40pt;background:#fff;color:#000;padding:14px 40px;margin:12px 0; width:auto;
+  }
+  #view-main .btn-ss{
+    font-size:32pt;background:#fff;color:#000;padding:12px 36px;margin:12px 0; width:auto;
+  }
+  #view-main .row{display:flex;flex-direction:row;align-items:center;gap:16px;margin:12px 0;flex-wrap:wrap}
+  #view-main .row label{font-size:28pt}
+  #view-main input[type="date"]{
+    font-size:22pt;padding:6px 12px;border-radius:10px;border:1px solid var(--border);
+    background:#0f0f0f;color:#fff;outline:none;
+  }
+  #view-main .btn-report{font-size:32pt;background:#fff;color:#000;padding:10px 30px}
+  #view-main .row-pw{display:flex;align-items:center;gap:16px}
+  #view-main .row-pw input{
+    font-size:28pt;letter-spacing:.3em;text-align:center;width:220px;
+    padding:6px 12px;border-radius:10px;border:1px solid var(--border);background:#0f0f0f;color:#fff;outline:none;
+  }
+
+  /* ===== ④ レイアウト作成 ===== */
+  #view-layout { position:relative; }
+  #view-layout .wrap{min-height:100%;display:flex;flex-direction:column;gap:14px}
+  #view-layout h1{font-size:18px;margin:0}
+  #view-layout .room-name{font-size:42px;text-align:center;padding:4px 8px;border-radius:8px;border:1px solid #444;background:#0f0f0f;color:#eaeaea;width:min(800px,96vw);margin:0 auto;}
+  #view-layout .grid{width:fit-content;margin:0 auto;background:#1b1b1b;border:1px solid #2a2a2a;padding:12px;border-radius:14px}
+  #view-layout .cells{display:grid;gap:var(--gap);grid-template-columns:repeat(10,var(--cell));grid-template-rows:repeat(10,var(--cell))}
+  #view-layout .cell{width:var(--cell);height:var(--cell);border-radius:8px;background:#fff;position:relative;user-select:none}
+  #view-layout .st-wall{background:#000}
+  #view-layout .st-hall{background:#fff}
+  #view-layout .st-seat{background:#1e90ff}
+  #view-layout .st-door{background:#90ee90}
+  #view-layout .cell span{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    font-size:calc(var(--cell)*0.50);font-weight:900;color:#001a42;text-shadow:0 1px 0 rgba(255,255,255,.6);
+    background:transparent;border-radius:0;padding:0;line-height:1;
+  }
+  #view-layout .cell .label{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    font-size:12px;font-weight:bold;color:#006400;background:rgba(255,255,255,0.7);padding:2px 4px;border-radius:4px
+  }
+  #view-layout .toolbar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  #view-layout button{background:#fff;color:#000;border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+  #view-layout button.ghost{background:#1f1f1f;color:#fff;border:1px solid #444}
+  #view-layout .hint{color:#9aa0a6;text-align:center}
+  #view-layout .back{
+    position:absolute; right:16px; top:16px;
+    border:1px solid var(--border);border-radius:10px;padding:8px 12px;background:#1b1b1b;color:#fff;cursor:pointer
+  }
+
+  /* ===== ⑤ 自習室開始（運用） ===== */
+  #view-run .root{height:100%;display:flex;gap:12px}
+  #view-run .left,#view-run .right{flex:1;min-width:0}
+  #view-run .title{font-size:24px;margin:0 0 8px 0}
+  #view-run .live-wrap{
+    height:calc(100vh - 220px);
+    background:#111;border:1px solid var(--border);border-radius:14px;padding:12px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #view-run .live-grid{display:grid;gap:var(--gap)}
+  #view-run .live-cell{width:var(--cell);height:var(--cell);border-radius:8px;position:relative;user-select:none;cursor:pointer}
+  #view-run .live-wall{background:#000}
+  #view-run .live-hall{background:#fff}
+  #view-run .live-seat-empty{background:var(--blue)}
+  #view-run .live-seat-busy{background:var(--pink)}
+  #view-run .live-door{background:#90ee90}
+  #view-run .seatno{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    font-size:calc(var(--cell)*0.50);font-weight:900;color:#001a42;text-shadow:0 1px 0 rgba(255,255,255,.6)
+  }
+  #view-run .doorTag{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:75%;height:75%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.7);color:#006400;font-weight:bold;border-radius:6px;
+    font-size:clamp(10px, calc(var(--cell)*0.22), 18px);line-height:1;
+  }
+  #view-run .legend{margin-top:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  #view-run .legend .box{display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid #666;margin-right:4px}
+  #view-run .legend .lbl{font-size:14px;color:#cfcfcf}
+  #view-run .right{display:flex;flex-direction:column;gap:24px;align-items:center}
+  #view-run .clock{width:100%;height:20vh;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:14px;background:#0f0f0f;font-weight:700;letter-spacing:.05em}
+  #view-run .clock .date{font-size:40px;margin-bottom:8px}
+  #view-run .clock .time{font-size:64px}
+  #view-run .btn-big{border:none;border-radius:14px;cursor:pointer;font-weight:800;padding:18px 40px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  #view-run .btn-enter{background:var(--blue);color:var(--navy);font-size:48pt}
+  #view-run .btn-leave{background:var(--pink);color:var(--red);font-size:48pt}
+  #view-run .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  #view-run .btn-back{border:1px solid var(--border);border-radius:10px;padding:8px 12px;background:#1b1b1b;color:#fff;cursor:pointer}
+
+  /* 座席操作ダイアログ（run） */
+  .dialog{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
+  .dialog .box{background:#1b1b1b;color:#fff;border:1px solid #2a2a2a;border-radius:14px;padding:18px;min-width:min(92vw,420px)}
+  .dialog .rowx{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .dialog .box input{flex:1;border-radius:8px;border:1px solid #444;background:#0f0f0f;color:#eaeaea;padding:10px}
+  .dialog .warn{color:#ffb74d;display:none;margin-top:8px}
+  .dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  .btn{border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer}
+  .btn.primary{background:#fff;color:#000}
+
+  /* ===== ⑥ 入室・退出（スキャン） ===== */
+  #view-scan .page{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  #view-scan .main{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center}
+  #view-scan .stage{min-height:60vh;background:#0f0f0f;border:1px solid var(--border);border-radius:14px;position:relative;padding:12px;display:flex;align-items:center;justify-content:flex-start;overflow:hidden}
+  #view-scan .stage-inner{width:80%;max-width:80%;position:relative;display:flex;align-items:center;justify-content:center}
+  #view-scan video{width:100%;height:auto;display:block;border-radius:12px;background:#000;object-fit:cover;max-height:70vh}
+  #view-scan .overlay{position:absolute;pointer-events:none}
+  #view-scan .guide{position:absolute;border:3px solid rgba(79,195,247,0.9);border-radius:12px;box-shadow:0 0 0 200vmax rgba(0,0,0,.25) inset}
+  #view-scan .id-panel{display:flex;flex-direction:column;align-items:center;gap:14px;background:#0f0f0f;border:1px solid var(--border);border-radius:14px;padding:18px;min-height:60vh;justify-content:center}
+  #view-scan .id-title{font-size:28px;font-weight:700}
+  #view-scan .id-input{font-size:40pt;line-height:1;width:min(90%,22ch);padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:#050505;color:#fff;text-align:center;letter-spacing:.02em}
+  #view-scan .id-input::placeholder{color:#9aa0a6}
+  #view-scan .btn-ok{font-size:28px;font-weight:800;padding:10px 24px;border-radius:12px;background:var(--blue);color:#001a42;cursor:pointer}
+  #view-scan .status{text-align:center;font-size:16px;color:#9aa0a6}
+  #view-scan .result{text-align:center;font-size:22px;font-weight:700;color:#000;background:var(--blue);padding:10px 14px;border-radius:12px;width:min(92vw,900px);margin:0 auto;display:none}
+
+  /* 確認モーダル（scan） → 2倍相当 */
+  #confirmDlg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:60}
+  #confirmDlg .cbox{background:#1b1b1b;border:1px solid #2a2a2a;border-radius:20px;padding:36px;min-width:min(92vw,760px)}
+  #confirmDlg .msg{font-size:36px;margin-bottom:24px}
+  #confirmDlg .btns .btn{font-size:24px;padding:12px 20px}
+
+  /* 座席割当モーダル（scan） → 2倍相当 */
+  #assignDlg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:65}
+  #assignDlg .cbox{background:#1b1b1b;border:1px solid #2a2a2a;border-radius:20px;padding:36px;min-width:min(92vw,720px)}
+  #assignDlg .msg{font-size:36px;margin-bottom:24px}
+  #assignDlg .btns .btn{font-size:24px;padding:12px 20px}
+
+  /* 退室時：未利用IDモーダル */
+  #infoDlg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:70}
+  #infoDlg .cbox{background:#1b1b1b;border:1px solid #2a2a2a;border-radius:20px;padding:28px;min-width:min(92vw,560px)}
+  #infoDlg .msg{font-size:28px;margin-bottom:18px}
+  #infoDlg .btns .btn{font-size:20px;padding:10px 18px}
+
+  /* ======= スライドショー オーバーレイ（全画面） ======= */
+  #ssOverlay{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:9999;cursor:none}
+  #ssStage{position:relative;width:100vw;height:100vh;overflow:hidden;background:#000}
+  .ssLayer{position:absolute;inset:0;opacity:0;transition:opacity 1200ms ease}
+  .ssLayer.show{opacity:1}
+  .ssImg, .ssVid{position:absolute;top:50%;left:50%;transform-origin:center center;will-change:transform,opacity}
+  .ssVid{max-width:100vw;max-height:100vh;transform:translate(-50%,-50%)}
+  .ssImg{max-width:none;max-height:none}
+
+  /* レスポンシブ */
+  @media (max-width:980px){
+    #view-title .title{font-size:64pt}
+    #view-title .inline-row{grid-template-columns:1fr}
+    #view-title .inline-label{font-size:28pt}
+    #view-main .title{font-size:28pt}
+    #view-main .btn-start{font-size:36pt;padding:16px 36px}
+    #view-main .btn-layout,#view-main .btn-report,#view-main .btn-ss{font-size:26pt}
+    #view-main .row label{font-size:22pt}
+    #view-main input[type="date"]{font-size:18pt}
+    #view-main .row-pw input{font-size:22pt;width:180px}
+    #view-layout .room-name{font-size:28px}
+    #view-run .root{flex-direction:column}
+    #view-run .clock .date{font-size:28px}
+    #view-run .clock .time{font-size:48px}
+    #view-run .btn-enter,#view-run .btn-leave{font-size:36pt}
+    #view-scan .main{grid-template-columns:1fr}
+    #view-scan .stage-inner{width:100%;max-width:100%}
+    #confirmDlg .cbox, #assignDlg .cbox{min-width:min(96vw, 640px); padding:28px}
+    #confirmDlg .btns .btn, #assignDlg .btns .btn{font-size:20px}
+  }
+
+  /* ===== スライドショー設定：チェックボックス拡大 ===== */
+  #ssEnabled { transform: scale(2); margin-right: 12px; vertical-align: middle; }
+  #view-ss label { font-size: 2em; }
+
+  /* ===== BGMピッカー（ダイアログ） ===== */
+  #bgmPicker .box{min-width:min(92vw,900px)}
+  #bgmPicker table{width:100%;border-collapse:collapse;background:#0f0f0f;border:1px solid #333;border-radius:10px;overflow:hidden}
+  #bgmPicker th,#bgmPicker td{padding:10px;border-bottom:1px solid #222;text-align:left}
+  #bgmPicker th{background:#151515}
+  #bgmPicker .right{text-align:right}
+  #bgmPicker .center{text-align:center}
+  #bgmPicker .muted{color:#9aa0a6}
+  #bgmPicker .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+  #bgmPicker .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  #bgmPicker .header .title{font-size:20px;font-weight:700}
+  #bgmPicker .pick-row{cursor:pointer}
+  #bgmPicker .pick-row:hover{background:#1a1a1a}
+</style>
 </head>
 <body>
 
 <!-- ===== ① タイトルメニュー ===== -->
 <section id="view-title" class="container">
   <div class="title">自習室管理</div>
-  <div class="login-inline">
+  <div class="login-inline" aria-label="教室ログイン">
     <div class="inline-row">
       <div class="inline-label">教室ID</div>
       <input id="roomIdTop" class="inline-input" type="text" placeholder="教室IDを入力" />
     </div>
+    <!-- パスワード欄は仕様により削除済み -->
     <button class="login-btn" id="btnTitleLogin">ログイン</button>
   </div>
 </section>
@@ -28,10 +256,19 @@
 <section id="view-ss" class="container hidden">
   <div class="wrap">
     <h1>スライドショー設定</h1>
+
     <div class="card">
-      <div class="row"><label><input type="checkbox" id="ssEnabled"> 有効</label></div>
-      <div class="row"><label for="ssIdleMin">無操作で起動（分）</label><input id="ssIdleMin" type="number" min="1" max="120" step="1" /></div>
-      <div class="row"><label for="ssDuration">1枚の表示（秒）</label><input id="ssDuration" type="number" min="3" max="120" step="1" /></div>
+      <div class="row">
+        <label><input type="checkbox" id="ssEnabled"> 有効</label>
+      </div>
+      <div class="row">
+        <label for="ssIdleMin">無操作で起動（分）</label>
+        <input id="ssIdleMin" type="number" min="1" max="120" step="1" />
+      </div>
+      <div class="row">
+        <label for="ssDuration">1枚の表示（秒）</label>
+        <input id="ssDuration" type="number" min="3" max="120" step="1" />
+      </div>
     </div>
 
     <div class="card">
@@ -41,7 +278,7 @@
         <button id="clearMedia" class="btn ghost">選択を解除</button>
       </div>
       <div class="file-row" style="margin-top:8px">
-        <label>BGM（BGM管理アプリから選択）</label>
+        <label>BGM（1つ / BGM管理アプリから選択）</label>
         <button id="btnPickBgm" class="btn ghost">BGMを選ぶ</button>
         <button id="clearBgm" class="btn ghost">選択を解除</button>
         <span id="bgmNow" class="note">（未選択）</span>
@@ -60,9 +297,17 @@
 <section id="view-main" class="container hidden">
   <div class="wrap">
     <h1 class="title">自習室管理メインメニュー</h1>
+
     <button class="btn btn-start" id="btnGoRun">自習室開始</button>
     <button class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
     <button class="btn btn-ss" id="btnGoSs">スライドショー設定</button>
+
+    <div class="row">
+      <label>利用履歴</label>
+      <input type="date" id="historyDate" />
+      <button class="btn btn-report" id="btnMakeReport">レポート作成</button>
+    </div>
+
     <div class="row row-pw">
       <label>ロック解除パスワード</label>
       <input id="unlockPwMain" type="text" maxlength="4" pattern="[0-9]*" inputmode="numeric" />
@@ -72,11 +317,14 @@
 
 <!-- ===== ④ レイアウト作成 ===== -->
 <section id="view-layout" class="container hidden">
-  <button class="back" id="btnBackFromLayout">メインメニューに戻る</button>
+  <button class="back" onclick="gotoMain()">メインメニューに戻る</button>
+
   <div class="wrap">
     <h1>自習室レイアウト作成</h1>
     <input id="roomName" class="room-name" placeholder="自習室の名称を入力" />
-    <div class="grid"><div id="cells" class="cells" role="grid" aria-label="レイアウト 10×10"></div></div>
+    <div class="grid">
+      <div id="cells" class="cells" role="grid" aria-label="レイアウト 10×10"></div>
+    </div>
     <div class="toolbar">
       <button id="allWall" class="ghost">全て壁</button>
       <button id="allHall" class="ghost">全て廊下</button>
@@ -84,7 +332,7 @@
       <button id="openBtn" class="ghost">ファイルを開く</button>
       <input id="fileOpen" type="file" accept=".json,application/json" style="display:none" />
     </div>
-    <div class="hint">左クリック：壁→廊下→入口／長押し：座席＋番号</div>
+    <div class="hint">左クリック：壁（黒）→ 廊下（白）→ 入口（薄緑）／ 長押し（右クリック相当）：座席（青）＋番号入力</div>
   </div>
 </section>
 
@@ -92,26 +340,126 @@
 <section id="view-run" class="container hidden">
   <div class="topbar">
     <h3 id="runRoomTitle" class="title">自習室</h3>
-    <button class="btn-back" id="btnBackFromRun">メインメニューに戻る</button>
+    <button class="btn-back" onclick="backToMainFromRun()">メインメニューに戻る</button>
   </div>
+
   <div class="root">
     <section class="left">
-      <div id="liveWrap" class="live-wrap"><div id="liveGrid" class="live-grid"></div></div>
+      <div id="liveWrap" class="live-wrap">
+        <div id="liveGrid" class="live-grid" aria-label="現在のレイアウト"></div>
+      </div>
       <div class="legend">
         <span class="box" style="background:#4fc3f7"></span><span class="lbl">空席</span>
         <span class="box" style="background:#ffc0cb"></span><span class="lbl">利用中</span>
       </div>
     </section>
-    <section class="right">
-      <div class="clock"><div id="dateText" class="date">----/--/--</div><div id="timeText" class="time">--:--</div></div>
-      <button class="btn-big btn-enter" id="btnOpenEnter">入 室</button>
-      <button class="btn-big btn-leave" id="btnOpenLeave">退 室</button>
+
+    <section class="right" aria-label="操作">
+      <div class="clock">
+        <div id="dateText" class="date">----/--/--（-）</div>
+        <div id="timeText" class="time">--:--</div>
+      </div>
+      <button class="btn-big btn-enter" onclick="openScan('enter')">入 室</button>
+      <button class="btn-big btn-leave" onclick="openScan('leave')">退 室</button>
     </section>
   </div>
 </section>
 
+<!-- 座席操作ダイアログ（run） -->
+<div id="dlgSeatOps" class="dialog" role="dialog" aria-modal="true" aria-label="座席操作">
+  <div class="box">
+    <div class="rowx">
+      <label style="min-width:9em">ロック解除パスワード</label>
+      <input id="unlockPwOps" type="password" placeholder="" maxlength="4" inputmode="numeric" />
+    </div>
+    <div style="font-weight:700;margin-top:8px;display:flex;align-items:center;gap:8px">
+      <span>座席操作</span>
+      <span id="seatOpsUsage" style="color:#ccc;font-size:0.95em"></span>
+    </div>
+    <div class="rowx">
+      <label style="min-width:6em">座席移動</label>
+      <input id="moveToSeat" type="text" placeholder="座席No.を入力">
+    </div>
+    <div class="btns" style="justify-content:flex-start">
+      <button id="opsCancel" class="btn">閉じる</button>
+      <button id="opsOk" class="btn primary">座席移動</button>
+      <button id="btnDoLeave" class="btn">退席処理</button>
+    </div>
+    <div id="opsWarn" class="warn">パスワードが正しくありません。</div>
+  </div>
+</div>
+
+<!-- ===== ⑥ 入室・退出（スキャン） ===== -->
+<section id="view-scan" class="container hidden">
+  <header class="page">
+    <h1 id="scanTitle">QRスキャン</h1>
+    <button class="btn" onclick="backFromScan()">戻る</button>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <div class="stage-inner" id="stageInner">
+        <video id="video" playsinline autoplay muted></video>
+        <div id="overlay" class="overlay"><div id="guide" class="guide" aria-hidden="true"></div></div>
+      </div>
+    </div>
+
+    <div class="id-panel">
+      <div class="id-title">利用ID入力</div>
+      <input id="idInput" class="id-input" type="text" placeholder="例：12345678" inputmode="numeric" maxlength="15" aria-label="利用IDを入力"/>
+      <button id="okBtn" class="btn-ok">完 了</button>
+      <div id="okNote" class="status" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="status" class="status">カメラを起動しています…</div>
+  <div id="result" class="result" role="alert" aria-live="assertive"></div>
+  <div class="controls" style="display:flex;gap:10px;justify-content:center;margin-top:6px">
+    <button id="restart" class="btn hidden">もう一度スキャン</button>
+    <button id="switchCam" class="btn hidden">カメラ切替</button>
+  </div>
+  <div id="err" class="status" style="color:#ff2d55"></div>
+</section>
+
+<!-- 確認モーダル（scan） -->
+<div id="confirmDlg" role="dialog" aria-modal="true" aria-label="確認" style="display:none; align-items:center; justify-content:center;">
+  <div class="cbox">
+    <div id="confirmMsg" class="msg">XXXXX を処理しますか？</div>
+    <div class="btns" style="display:flex;gap:10px;justify-content:flex-end">
+      <button id="confirmCancel" class="btn">キャンセル</button>
+      <button id="confirmOk" class="btn primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- 座席割当モーダル（入室OK後） -->
+<div id="assignDlg" role="dialog" aria-modal="true" aria-label="座席割当" style="display:none; align-items:center; justify-content:center;">
+  <div class="cbox">
+    <div id="assignMsg" class="msg">No.?? の座席を利用してください。</div>
+    <div class="btns" style="display:flex;gap:10px;justify-content:flex-end">
+      <button id="assignCancel" class="btn">キャンセル</button>
+      <button id="assignOk" class="btn primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- 退室時：情報モーダル -->
+<div id="infoDlg" role="dialog" aria-modal="true" aria-label="情報" style="display:none; align-items:center; justify-content:center;">
+  <div class="cbox">
+    <div id="infoMsg" class="msg">このIDは利用中ではありません。</div>
+    <div class="btns" style="display:flex;gap:10px;justify-content:flex-end">
+      <button id="infoOk" class="btn primary">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== スライドショー オーバーレイ ===== -->
-<div id="ssOverlay"><div id="ssStage"><div id="ssLayerA" class="ssLayer"></div><div id="ssLayerB" class="ssLayer"></div></div></div>
+<div id="ssOverlay">
+  <div id="ssStage">
+    <div id="ssLayerA" class="ssLayer"></div>
+    <div id="ssLayerB" class="ssLayer"></div>
+  </div>
+</div>
 
 <!-- ===== BGM ピッカーダイアログ ===== -->
 <div id="bgmPicker" class="dialog" role="dialog" aria-modal="true" aria-label="BGMを選択">
@@ -122,15 +470,26 @@
     </div>
     <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center">
       <button id="bgmReload" class="btn">更新</button>
-      <span class="note">ダブルクリック、または「試聴」で再生</span>
+      <span class="muted">ダブルクリック、または行の「試聴」で再生。</span>
     </div>
     <div style="max-height:50vh;overflow:auto;border:1px solid #333;border-radius:10px">
       <table>
-        <thead><tr><th>Title</th><th style="width:200px">DATE</th><th style="width:120px" class="right">SIZE</th><th style="width:120px" class="center">操作</th></tr></thead>
-        <tbody id="bgmTbody"><tr><td colspan="4" class="center muted">読み込み中…</td></tr></tbody>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th style="width:200px">DATE</th>
+            <th style="width:120px" class="right">SIZE</th>
+            <th style="width:120px" class="center">操作</th>
+          </tr>
+        </thead>
+        <tbody id="bgmTbody">
+          <tr><td colspan="4" class="center muted">読み込み中…</td></tr>
+        </tbody>
       </table>
     </div>
-    <div style="margin-top:8px"><audio id="bgmPreview" controls preload="none" style="width:100%"></audio></div>
+    <div style="margin-top:8px">
+      <audio id="bgmPreview" controls preload="none" style="width:100%"></audio>
+    </div>
     <div class="btns" style="margin-top:10px">
       <button id="bgmCancel" class="btn">キャンセル</button>
       <button id="bgmOk" class="btn primary">決 定</button>
@@ -138,5 +497,897 @@
   </div>
 </div>
 
+<!-- jsQR -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+<script>
+/* ===== 固定：BGM管理アプリ Functions ベースURL =====
+ * 先に作成した BGM 管理 Netlify の URL を記入済み
+ */
+const BGM_API_BASE = 'https://superlative-bienenstitch-e300de.netlify.app/.netlify/functions';
+
+/* ===== 共通キー・ユーティリティ ===== */
+const KEY_LAYOUT='studyroom-layout-v7', KEY_NAME='studyroom-name-v7', KEY_UNLOCK='unlock-pw';
+const KEY_HISTORY='usage-history-v1';
+const KEY_ROOM_PREFIX='room-id-prefix'; // 教室ID（3桁以上）
+const SIZE=10;
+function $(id){return document.getElementById(id);}
+function show(id){
+  document.querySelectorAll('section.container').forEach(s=>s.classList.add('hidden'));
+  $(id).classList.remove('hidden');
+}
+function gotoTitle(){ stopCamera(); show('view-title'); }
+function gotoMain(){ stopCamera(); show('view-main'); }
+function gotoLayout(){ stopCamera(); renderEditor(); show('view-layout'); }
+function gotoRun(){
+  stopCamera();
+  show('view-run');
+  requestAnimationFrame(()=>{
+    renderRun();
+    setTimeout(forceRunFit, 60);
+  });
+}
+function gotoSs(){ stopCamera(); loadSsSettingsUI(); show('view-ss'); }
+function forceRunFit(){
+  const liveGrid=$('liveGrid');
+  const cs=getComputedStyle(liveGrid);
+  const cols=cs.gridTemplateColumns.split(' ').length||1;
+  const rows=cs.gridTemplateRows.split(' ').length||1;
+  fitCellSize(cols, rows);
+}
+
+/* ===== タイトル → メイン ===== */
+$('btnTitleLogin').addEventListener('click', ()=>{
+  const rid = ($('roomIdTop').value||'').trim();
+  if(!rid || rid.length<3){ alert('教室ID（先頭3桁以上）を入力してください'); return; }
+  localStorage.setItem(KEY_ROOM_PREFIX, rid);
+  gotoMain();
+});
+
+/* ===== メインメニューの遷移 ===== */
+$('btnGoRun').addEventListener('click', ()=>{
+  const saved = localStorage.getItem(KEY_UNLOCK)||'';
+  if(!saved){ alert('ロック解除パスワードを設定してください'); return; }
+  gotoRun();
+});
+$('btnGoLayout').addEventListener('click', gotoLayout);
+$('btnGoSs').addEventListener('click', gotoSs);
+
+/* ===== 履歴CSV ＆ メール下書き ===== */
+$('btnMakeReport').addEventListener('click', generateReport);
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem(KEY_HISTORY)||'[]'); }catch{return []} }
+function saveHistory(arr){ localStorage.setItem(KEY_HISTORY, JSON.stringify(arr)); }
+function fmt2(n){ return String(n).padStart(2,'0'); }
+function toDateStr(d){ return `${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}`; }
+function toDisp(d){ return `${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())} ${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`; }
+function generateReport(){
+  const el = $('historyDate');
+  const pick = el && el.value ? el.value : toDateStr(new Date());
+  const hist = loadHistory().filter(r => r.date === pick);
+
+  let lines = ['利用ID,入室時刻,退出時刻'];
+  for(const r of hist){
+    const inStr  = r.inAt ? toDisp(new Date(r.inAt)) : '';
+    const outStr = r.outAt ? `${toDisp(new Date(r.outAt))}${r.outMarked?'★':''}` : '';
+    lines.push([`"${r.uid||''}"`,`"${inStr}"`,`"${outStr}"`].join(','));
+  }
+  const csvBody = lines.join('\r\n');
+
+  // ダウンロード
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csvBody], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${pick.replaceAll('-','')}_利用履歴.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+
+  // メール下書き（mailto）を開く（自動送信は不可）
+  const subject = encodeURIComponent(`利用履歴CSV ${pick}`);
+  const body    = encodeURIComponent(csvBody);
+  location.href = `mailto:k_hayashi@sozogakuen.co.jp?subject=${subject}&body=${body}`;
+}
+
+/* ロック解除PW保存（メイン） */
+const unlockInput=$('unlockPwMain');
+unlockInput.value = localStorage.getItem(KEY_UNLOCK)||'';
+unlockInput.addEventListener('input',()=>localStorage.setItem(KEY_UNLOCK,(unlockInput.value||'').trim()));
+
+/* ===== ④ レイアウトエディタ ===== */
+const editor = { grid: null, cellsEl: $('cells'), nameEl: $('roomName') };
+function makeAll(t){ return Array.from({length:SIZE},()=>Array.from({length:SIZE},()=>({t,n:null}))); }
+function clsEdit(t){ return t===0?'st-wall':t===1?'st-hall':t===2?'st-seat':'st-door'; }
+function loadLayout(){ try{const raw=localStorage.getItem(KEY_LAYOUT);return raw?JSON.parse(raw):null;}catch{return null} }
+function saveLayout(obj){ localStorage.setItem(KEY_LAYOUT, JSON.stringify(obj)); }
+function renderEditor(){
+  editor.grid = loadLayout() || makeAll(0);
+  editor.nameEl.value = localStorage.getItem(KEY_NAME)||'';
+  editor.cellsEl.innerHTML='';
+  for(let y=0;y<SIZE;y++){
+    for(let x=0;x<SIZE;x++){
+      const st=editor.grid[y][x]; const d=document.createElement('div');
+      d.className='cell '+clsEdit(st.t); d.dataset.x=x; d.dataset.y=y;
+      if(st.t===2 && st.n){
+        const s=document.createElement('span'); s.textContent=st.n; d.appendChild(s);
+      }
+      if(st.t===3){
+        const l=document.createElement('div'); l.className='label'; l.textContent='入口'; d.appendChild(l);
+      }
+      // 左クリック：壁→廊下→入口→壁
+      d.addEventListener('click', ()=>{
+        const cur=editor.grid[y][x]; let next;
+        if(cur.t===0) next=1; else if(cur.t===1) next=3; else next=0;
+        editor.grid[y][x]={t:next,n:null}; saveLayout(editor.grid); renderEditor();
+      });
+      // 長押し（右クリック相当）：座席番号
+      let pressTimer=null;
+      const startPress=(e)=>{ e.preventDefault(); pressTimer=setTimeout(()=> seatPrompt(), 500); };
+      const cancelPress=()=>{ if(pressTimer){clearTimeout(pressTimer);pressTimer=null;} };
+      const seatPrompt=()=>{
+        const v=prompt('座席番号を入力（空で取消）', st.t===2?(st.n||''):'');
+        if(v!=null && v.trim()!==''){ editor.grid[y][x]={t:2,n:v.trim()}; saveLayout(editor.grid); renderEditor(); }
+      };
+      d.addEventListener('contextmenu', e=>{ e.preventDefault(); seatPrompt(); });
+      d.addEventListener('touchstart', startPress, {passive:false});
+      d.addEventListener('mousedown', startPress);
+      ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev=>d.addEventListener(ev, cancelPress));
+
+      editor.cellsEl.appendChild(d);
+    }
+  }
+}
+editor.nameEl && editor.nameEl.addEventListener('input', ()=> localStorage.setItem(KEY_NAME, editor.nameEl.value.trim()));
+$('allWall').addEventListener('click', ()=>{ if(confirm('全て壁にしますか？')){ editor.grid=makeAll(0); saveLayout(editor.grid); renderEditor(); }});
+$('allHall').addEventListener('click', ()=>{ if(confirm('全て廊下にしますか？')){ editor.grid=makeAll(1); saveLayout(editor.grid); renderEditor(); }});
+$('saveBtn').addEventListener('click', ()=>{
+  const data = { version:1, name:(localStorage.getItem(KEY_NAME)||'').trim(), size:{w:SIZE,h:SIZE}, cells:editor.grid };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a=document.createElement('a'); const base = (editor.nameEl.value||data.name||'layout').trim();
+  const now=new Date(), ts=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  a.download=`${base}_${ts}.json`; a.href=URL.createObjectURL(blob); a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),0);
+});
+$('openBtn').addEventListener('click', ()=> $('fileOpen').click());
+$('fileOpen').addEventListener('change', async (e)=>{
+  const f=e.target.files && e.target.files[0]; if(!f) return;
+  try{
+    const obj=JSON.parse(await f.text());
+    if(!obj || !obj.size || !obj.cells) throw new Error('形式が不正');
+    if(obj.size.w!==SIZE || obj.size.h!==SIZE) throw new Error('サイズ不一致');
+    editor.grid = obj.cells; saveLayout(editor.grid);
+    const nm=(obj.name||'').trim(); localStorage.setItem(KEY_NAME, nm); editor.nameEl.value = nm;
+    renderEditor(); alert('インポートしました');
+  }catch(err){ alert('インポート失敗: '+err.message); }
+  e.target.value='';
+});
+
+/* ===== ⑤ 運用表示 ===== */
+const seatState = JSON.parse(localStorage.getItem('seatState')||'{}'); // { "1": {busy:true, uid:"...", inAt:ISO, outAt:ISO, outMarked:true } | false }
+function saveSeatState(){ localStorage.setItem('seatState', JSON.stringify(seatState)); }
+function loadName(){ return (localStorage.getItem(KEY_NAME)||'').trim() || '自習室'; }
+function computeCroppedArea(g){
+  let minX=SIZE,minY=SIZE,maxX=-1,maxY=-1;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    const t=g?.[y]?.[x]?.t; if(t===1||t===2||t===3){ if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y; }
+  }
+  if(maxX<0) return {minX:0,minY:0,maxX:SIZE-1,maxY:SIZE-1};
+  return {minX:Math.max(0,minX-1),minY:Math.max(0,minY-1),maxY:Math.min(SIZE-1,maxY+1)};
+}
+function isBusyEntry(e){ return !!(e && (e===true || e.busy)); }
+function clsRun(t, seatNo){ if(t===0)return'live-wall'; if(t===1)return'live-hall'; if(t===3)return'live-door'; const busy = isBusyEntry(seatState[seatNo]); return busy?'live-seat-busy':'live-seat-empty'; }
+const liveWrap=$('liveWrap'), liveGrid=$('liveGrid'), runRoomTitle=$('runRoomTitle');
+function fitCellSize(cols, rows){
+  const pad=24; const w=liveWrap.clientWidth-pad; const h=liveWrap.clientHeight-pad;
+  const gap=4; const cellW=Math.floor((w-gap*(cols-1))/cols); const cellH=Math.floor((h-gap*(rows-1))/rows);
+  const size=Math.max(10, Math.min(cellW,cellH)); liveGrid.style.setProperty('--cell', size+'px');
+}
+function renderRun(){
+  runRoomTitle.textContent=loadName();
+  const g=loadLayout();
+  if(!g){ liveGrid.innerHTML='<div style="opacity:.7">レイアウトが見つかりません（レイアウト作成で保存してください）</div>'; return; }
+  const {minX,minY,maxX,maxY}=computeCroppedArea(g);
+  const cols=maxX-minX+1, rows=maxY-minY+1;
+  liveGrid.style.gridTemplateColumns=`repeat(${cols}, var(--cell))`;
+  liveGrid.style.gridTemplateRows=`repeat(${rows}, var(--cell))`;
+  liveGrid.innerHTML='';
+  for(let y=minY;y<=maxY;y++){
+    for(let x=minX;x<=maxX;x++){
+      const st=g[y][x]||{t:0};
+      const seatNo=(st.t===2&&st.n)?String(st.n):null;
+      const cell=document.createElement('div');
+      cell.className='live-cell '+clsRun(st.t, seatNo);
+      if(st.t===2 && seatNo){
+        const tag=document.createElement('div'); tag.className='seatno'; tag.textContent=seatNo; cell.appendChild(tag);
+        cell.addEventListener('click', ()=> openSeatOps(seatNo));
+      }
+      if(st.t===3){
+        const lab=document.createElement('div'); lab.className='doorTag'; lab.textContent='入口'; cell.appendChild(lab);
+      }
+      liveGrid.appendChild(cell);
+    }
+  }
+  fitCellSize(cols, rows);
+}
+window.addEventListener('resize', ()=>{
+  if($('view-run').classList.contains('hidden')) return;
+  forceRunFit();
+});
+
+/* 時計 */
+const dateEl=$('dateText'), timeEl=$('timeText');
+const pad2=n=>String(n).padStart(2,'0');
+function updateClock(){ const d=new Date(), wk=['日','月','火','水','木','金','土'][d.getDay()];
+  dateEl.textContent=`${d.getFullYear()}/${pad2(d.getMonth()+1)}/${pad2(d.getDate())}（${wk}）`;
+  timeEl.textContent=`${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
+updateClock(); setInterval(updateClock, 30000);
+
+/* ⑤→③ 戻る時はロック解除PW */
+function backToMainFromRun(){
+  const saved = localStorage.getItem(KEY_UNLOCK)||'';
+  if(!saved){
+    alert('メインメニューに戻るには、先にメインメニューでロック解除パスワードを設定してください。');
+    return;
+  }
+  const input = prompt('ロック解除パスワードを入力してください');
+  if(input===saved){
+    gotoMain();
+  }else{
+    alert('パスワードが一致しません。メインメニューには戻れません。');
+  }
+}
+
+/* 座席操作ダイアログ */
+const dlgSeatOps=$('dlgSeatOps'), moveToSeat=$('moveToSeat'), unlockPwOps=$('unlockPwOps'),
+      opsWarn=$('opsWarn'), opsCancel=$('opsCancel'), opsOk=$('opsOk'), btnDoLeave=$('btnDoLeave'),
+      seatOpsUsage=$('seatOpsUsage');
+let seatOpsTarget=null;
+function checkUnlock(pw){ const saved=localStorage.getItem(KEY_UNLOCK)||''; return saved && saved===String(pw); }
+function openSeatOps(seatNo){
+  seatOpsTarget=seatNo; moveToSeat.value=''; unlockPwOps.value=''; opsWarn.style.display='none';
+  const entry = seatState[seatNo];
+  if (isBusyEntry(entry)) {
+    const uid = (entry && entry.uid) ? entry.uid : '不明';
+    seatOpsUsage.textContent = `使用中（${uid}）`;
+  } else {
+    seatOpsUsage.textContent = '';
+  }
+  dlgSeatOps.style.display='flex';
+}
+function closeSeatOps(){ dlgSeatOps.style.display='none'; seatOpsTarget=null; }
+opsCancel.addEventListener('click', closeSeatOps);
+opsOk.addEventListener('click', ()=>{
+  opsWarn.style.display='none';
+  if(!checkUnlock(unlockPwOps.value)){ opsWarn.style.display='block'; return; }
+  const to=(moveToSeat.value||'').trim();
+  if(seatOpsTarget && to){
+    const prev = seatState[seatOpsTarget];
+    const uid = (prev && prev.uid) ? prev.uid : undefined;
+    seatState[seatOpsTarget]=false;
+    seatState[to]= uid ? {busy:true, uid, inAt: prev?.inAt||undefined} : true;
+    saveSeatState();
+  }
+  closeSeatOps(); renderRun(); setTimeout(forceRunFit, 16);
+});
+btnDoLeave.addEventListener('click', ()=>{
+  opsWarn.style.display='none';
+  if(!checkUnlock(unlockPwOps.value)){ opsWarn.style.display='block'; return; }
+  if(seatOpsTarget){
+    const prev = seatState[seatOpsTarget];
+    const uid = prev && prev.uid ? prev.uid : null;
+    if (uid) {
+      addHistoryOnLeave(uid, new Date(), true); // ★ 管理画面からの退席
+      // ★ 集約ログ：管理経由
+      pushLog({ uid, action:'leave', seatNo: seatOpsTarget, method:'admin', roomPrefix: String(uid).slice(0,3), star:true });
+    }
+    seatState[seatOpsTarget]=false; saveSeatState();
+  }
+  closeSeatOps(); renderRun(); setTimeout(forceRunFit, 16);
+});
+
+/* ===== ⑥ スキャン（入室/退出） ===== */
+let scanMode='enter'; // 'enter' or 'leave'
+let lastScannedValue = '';
+let lastInputMethod = 'qr'; // 'qr' | 'input'
+const video=$('video'), statusEl=$('status'), resultEl=$('result'), errEl=$('err'),
+      restartBtn=$('restart'), switchBtn=$('switchCam'), idInput=$('idInput'), okBtn=$('okBtn'), okNote=$('okNote'),
+      overlay=$('overlay'), guide=$('guide');
+let stream=null, scanning=false, useEnvironment=false, rafId=null;
+const canvas=document.createElement('canvas'), ctx=canvas.getContext('2d',{willReadFrequently:true});
+const GUIDE_SCALE=0.7;
+function openScan(mode){ scanMode = (mode==='leave') ? 'leave' : 'enter'; startScanView(); }
+function backFromScan(){ stopCamera(); gotoRun(); }
+function fitOverlayToVideo(){
+  const vw=video.clientWidth, vh=video.clientHeight, offLeft=video.offsetLeft, offTop=video.offsetTop;
+  if(vw===0||vh===0) return;
+  overlay.style.position='absolute';
+  overlay.style.left=offLeft+'px'; overlay.style.top=offTop+'px';
+  overlay.style.width=vw+'px'; overlay.style.height=vh+'px';
+  const side=Math.floor(Math.min(vw,vh)*GUIDE_SCALE);
+  guide.style.width=side+'px'; guide.style.height=side+'px';
+  guide.style.position='absolute';
+  guide.style.left=Math.floor((vw-side)/2)+'px'; guide.style.top=Math.floor((vh-side)/2)+'px';
+}
+async function startCamera(){
+  stopCamera(); errEl.textContent=''; resultEl.style.display='none';
+  statusEl.textContent='カメラを起動しています…'; restartBtn.classList.add('hidden');
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio:false, video:{ facingMode: useEnvironment?{ideal:'environment'}:{ideal:'user'}, width:{ideal:1280}, height:{ideal:720} }
+    });
+    video.srcObject=stream; await video.play();
+    try{
+      const cams=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+      switchBtn.classList.toggle('hidden', !(cams.length>1));
+    }catch{}
+    scanning=true; statusEl.textContent='QRコードを水色枠の中央に合わせてください…';
+    fitOverlayToVideo(); scanLoop();
+  }catch(e){
+    console.error(e); errEl.textContent='カメラを起動できません。ブラウザの許可とHTTPSを確認してください。';
+    restartBtn.classList.remove('hidden'); statusEl.textContent='起動待機中';
+  }
+}
+function stopCamera(){ scanning=false; if(rafId){cancelAnimationFrame(rafId);rafId=null;} if(stream){stream.getTracks().forEach(t=>t.stop()); stream=null;} }
+function scanLoop(){
+  if(!scanning) return;
+  if(video.readyState===video.HAVE_ENOUGH_DATA){
+    const vw=video.videoWidth, vh=video.videoHeight, scale=vw>1280?0.5:1.0;
+    canvas.width=Math.floor(vw*scale); canvas.height=Math.floor(vh*scale);
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+    if(code&&code.data){ lastInputMethod='qr'; onDetected(code.data); return; }
+  }
+  rafId=requestAnimationFrame(scanLoop);
+}
+function onDetected(text){
+  scanning=false; statusEl.textContent='QRを読み取りました。'; stopCamera();
+  resultEl.textContent=text; resultEl.style.display='block'; restartBtn.classList.remove('hidden');
+  if(navigator.vibrate) navigator.vibrate(60);
+  openConfirmWithValue(text);
+}
+restartBtn.addEventListener('click', ()=>{ resultEl.style.display='none'; startCamera(); });
+switchBtn.addEventListener('click', ()=>{ useEnvironment=!useEnvironment; startCamera(); });
+okBtn.addEventListener('click', ()=>{
+  const v=(idInput.value||'').trim();
+  if(!v){ okNote.style.display='block'; okNote.textContent='利用IDを入力してください。'; return; }
+  okNote.style.display='none'; stopCamera(); lastInputMethod='input'; openConfirmWithValue(v);
+});
+
+/* 確認モーダル：OK/キャンセル */
+const confirmDlg=$('confirmDlg'), confirmMsgEl=$('confirmMsg');
+$('confirmCancel').addEventListener('click', ()=>{ confirmDlg.style.display='none'; gotoRun(); });
+$('confirmOk').addEventListener('click', ()=>{
+  confirmDlg.style.display='none';
+  if (scanMode==='enter') {
+    const seatNo = findRecommendedSeat();
+    if (!seatNo) { alert('割り当て可能な座席が見つかりません。'); gotoRun(); return; }
+    openAssignWithSeat(seatNo);
+  } else {
+    const uid = lastScannedValue;
+    const seatNo = findSeatByUid(uid);
+    if (!seatNo) {
+      openInfo('このIDは利用中ではありません');
+      return;
+    } else {
+      addHistoryOnLeave(uid, new Date(), false); // 退室（スキャン/入力）：★なし
+      // ★ 集約ログ（スキャン/入力）
+      pushLog({ uid, action:'leave', seatNo, method:lastInputMethod, roomPrefix: String(uid).slice(0,3), star:false });
+      seatState[seatNo] = false; // 空席へ
+      saveSeatState();
+      gotoRun();
+    }
+  }
+});
+function openConfirmWithValue(v){
+  // 1) 教室ID先頭3桁チェック
+  const rp = (localStorage.getItem(KEY_ROOM_PREFIX)||'').slice(0,3);
+  const head3 = String(v).slice(0,3);
+  if(!rp || head3 !== rp){ openInfo('このIDは承認されていません'); return; }
+
+  // 2) 利用中重複（入室時）
+  if (scanMode==='enter') {
+    if (findSeatByUid(v)) { openInfo('このIDは現在利用中です'); return; }
+  }
+
+  lastScannedValue = v;
+  confirmMsgEl.textContent = (scanMode==='enter') ? `${v}　利用を開始しますか？` : `${v}　利用を終了しますか？`;
+  confirmDlg.style.display='flex';
+}
+
+/* 座席割当モーダル（入室OK後） */
+const assignDlg = $('assignDlg');
+const assignMsg = $('assignMsg');
+$('assignCancel').addEventListener('click', ()=>{ assignDlg.style.display='none'; gotoRun(); });
+$('assignOk').addEventListener('click', ()=>{
+  const m = assignMsg.textContent.match(/No\.([^の]+)\s*の座席/);
+  if (m) {
+    const no = String(m[1]).trim();
+    const now = new Date();
+    // 入室確定：座席状態＆履歴
+    seatState[no] = lastScannedValue ? {busy:true, uid:lastScannedValue, inAt: now.toISOString()} : {busy:true, inAt: now.toISOString()};
+    saveSeatState();
+    addHistoryOnEnter(lastScannedValue||'', now);
+    // ★ 集約ログ（入室）
+    pushLog({ uid:lastScannedValue||'', action:'enter', seatNo:no, method:lastInputMethod, roomPrefix: String(lastScannedValue||'').slice(0,3) });
+  }
+  assignDlg.style.display='none';
+  gotoRun();
+});
+function openAssignWithSeat(seatNo){
+  assignMsg.textContent = `No.${seatNo} の座席を利用してください。`;
+  assignDlg.style.display='flex';
+}
+
+/* 退室時用：情報モーダル */
+const infoDlg = $('infoDlg');
+const infoMsg = $('infoMsg');
+$('infoOk').addEventListener('click', ()=>{ infoDlg.style.display='none'; });
+function openInfo(msg){
+  infoMsg.textContent = msg || '情報';
+  infoDlg.style.display = 'flex';
+}
+
+/* 座席推薦ロジック */
+function findRecommendedSeat(){
+  const grid = loadLayout();
+  if (!grid) return null;
+
+  const seats = [], doors = [];
+  for (let y=0; y<SIZE; y++){
+    for (let x=0; x<SIZE; x++){
+      const st = grid[y][x];
+      if (!st) continue;
+      if (st.t === 2 && st.n){
+        seats.push({ no: String(st.n), x, y });
+      } else if (st.t === 3){
+        doors.push({ x, y });
+      }
+    }
+  }
+  if (seats.length === 0) return null;
+
+  const busyCoords = seats.filter(s => isBusyEntry(seatState[s.no])).map(s => ({x:s.x, y:s.y}));
+  const dist = (a,b)=> Math.hypot(a.x-b.x, a.y-b.y);
+
+  let bestSeat = null, bestScore = -Infinity;
+  for (const s of seats){
+    if (isBusyEntry(seatState[s.no])) continue;
+
+    let score;
+    if (busyCoords.length > 0){
+      let minD = Infinity;
+      for (const b of busyCoords){ const d = dist(s, b); if (d < minD) minD = d; }
+      score = minD;
+    } else if (doors.length > 0){
+      let minD = Infinity;
+      for (const d0 of doors){ const d = dist(s, d0); if (d < minD) minD = d; }
+      score = minD;
+    } else {
+      const center = { x:(SIZE-1)/2, y:(SIZE-1)/2 };
+      score = dist(s, center);
+    }
+
+    if (score > bestScore || (score === bestScore && bestSeat && (s.y < bestSeat.y || (s.y===bestSeat.y && s.x < bestSeat.x)))){
+      bestScore = score; bestSeat = s;
+    }
+  }
+  return bestSeat ? bestSeat.no : null;
+}
+
+/* 利用ID → 着席中の座席No 検索（退室判定用） */
+function findSeatByUid(uid){
+  if (!uid) return null;
+  for (const [no, entry] of Object.entries(seatState)){
+    if (entry && entry.busy && String(entry.uid) === String(uid)) {
+      return no;
+    }
+  }
+  return null;
+}
+
+/* === 利用履歴 === */
+function addHistoryOnEnter(uid, when){
+  const arr = loadHistory();
+  arr.push({
+    date: toDateStr(when),
+    uid: String(uid||''),
+    inAt: when.toISOString(),
+    outAt: null,
+    outMarked: false,
+  });
+  saveHistory(arr);
+}
+function addHistoryOnLeave(uid, when, withStar){
+  const arr = loadHistory();
+  for (let i = arr.length - 1; i >= 0; i--){
+    const r = arr[i];
+    if (String(r.uid) === String(uid) && !r.outAt){
+      r.outAt = when.toISOString();
+      r.outMarked = !!withStar;
+      break;
+    }
+  }
+  saveHistory(arr);
+}
+
+/* 初期表示：①タイトル */
+gotoTitle();
+
+/* ===== ⑤のレンダリング補助 ===== */
+function fitCellSize(cols, rows){
+  const pad=24; const w=liveWrap.clientWidth-pad; const h=liveWrap.clientHeight-pad;
+  const gap=4; const cellW=Math.floor((w-gap*(cols-1))/cols); const cellH=Math.floor((h-gap*(rows-1))/rows);
+  const size=Math.max(10, Math.min(cellW,cellH)); liveGrid.style.setProperty('--cell', size+'px');
+}
+
+/* ===== スキャン画面の各種イベント ===== */
+window.addEventListener('resize', ()=>{ if(!$('view-scan').classList.contains('hidden')) fitOverlayToVideo(); });
+window.addEventListener('orientationchange', ()=>{ if(!$('view-scan').classList.contains('hidden')) fitOverlayToVideo(); });
+video.addEventListener('loadedmetadata', fitOverlayToVideo);
+video.addEventListener('playing', fitOverlayToVideo);
+
+/* スキャン画面初期化（入力欄クリア含む） */
+function startScanView(){
+  $('scanTitle').textContent = (scanMode==='enter'?'入室スキャン':'退室スキャン');
+  show('view-scan');
+  $('idInput').value = ''; // 前回のIDを消去
+  startCamera();
+}
+
+/* ====== 集約ログ送信用ラッパ（GAS連携） ====== */
+const LOG_HUB_URL = 'https://script.google.com/a/macros/sozogakuen.co.jp/s/AKfycbwFVegH87ns6h8O64-zHTp_L2V8HywsAnR5JMMpPZzVOU5FqH1XBJBXCzyS5Ji5NaH2PQ/exec';
+const LOG_SHARED_KEY = ''; // 使わないなら空でOK
+const DEVICE_ID_KEY = 'device-id';
+function getDeviceId(){
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) { id = 'dev-' + Math.random().toString(36).slice(2) + Date.now(); localStorage.setItem(DEVICE_ID_KEY, id); }
+  return id;
+}
+const LOG_QUEUE_KEY = 'usage-log-queue';
+function loadQueue(){ try{ return JSON.parse(localStorage.getItem(LOG_QUEUE_KEY)||'[]'); }catch{return[]} }
+function saveQueue(q){ localStorage.setItem(LOG_QUEUE_KEY, JSON.stringify(q)); }
+async function pushLog(payload){
+  const now = new Date();
+  const body = new URLSearchParams({
+    apikey: LOG_SHARED_KEY || '',
+    uid: String(payload.uid||''),
+    action: String(payload.action||''),
+    seatNo: payload.seatNo || '',
+    method: payload.method || '',
+    roomPrefix: payload.roomPrefix || '',
+    star: payload.star ? '★' : '',
+    clientTime: now.toISOString(),
+    clientTz: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+    deviceId: getDeviceId(),
+    ua: navigator.userAgent
+  });
+  try{
+    const res = await fetch(LOG_HUB_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+    const json = await res.json().catch(()=>({}));
+    if (json && json.ok) return true;
+    throw new Error('server not ok');
+  }catch(err){
+    const q = loadQueue();
+    q.push(Object.fromEntries(body));
+    saveQueue(q);
+    return false;
+  }
+}
+async function flushLogQueue(){
+  let q = loadQueue();
+  if (!q.length) return;
+  const next = [];
+  for (const item of q){
+    try{
+      const res = await fetch(LOG_HUB_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams(item) });
+      const json = await res.json().catch(()=>({}));
+      if (!(json && json.ok)) next.push(item);
+    }catch{ next.push(item); }
+  }
+  saveQueue(next);
+}
+window.addEventListener('online', flushLogQueue);
+window.addEventListener('focus', flushLogQueue);
+document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') flushLogQueue(); });
+window.addEventListener('load', flushLogQueue);
+
+/* ====== スライドショー（全画面・全ビューでアイドル起動） ====== */
+const SS_KEY = 'ss.settings.v1';
+const SS_MEDIA_KEY = 'ss.media.v1'; // File/Blob は保存不可→URIを保持
+let ssTimer=null, ssIdleMs=600000; // 既定10分
+let ssEnabledFlag = false;
+let ssFilesArr = []; // {type:'image'|'video', url:objectURL}
+let ssBgmUrl = '';
+let ssBgmTitle = '';
+let ssAudio = null;
+const ssOverlay = $('ssOverlay'), ssLayerA=$('ssLayerA'), ssLayerB=$('ssLayerB');
+let ssIndex=0, ssShowingA=true, ssRunning=false;
+
+function loadSsSettings(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SS_KEY)||'{}');
+    ssEnabledFlag = !!s.enabled;
+    ssIdleMs = Math.max(1000, (s.idleMin||10)*60000);
+    window.__ssDurationSec = Math.max(3, s.durationSec||10);
+    ssBgmUrl = s.bgmUrl||'';
+    ssBgmTitle = s.bgmTitle||'';
+    const media = JSON.parse(localStorage.getItem(SS_MEDIA_KEY)||'[]');
+    ssFilesArr = media;
+  }catch{
+    ssEnabledFlag=false; ssIdleMs=600000; window.__ssDurationSec=10; ssFilesArr=[]; ssBgmUrl=''; ssBgmTitle='';
+  }
+}
+function saveSsSettingsUI(){
+  const s = {
+    enabled: $('ssEnabled').checked,
+    idleMin: Number($('ssIdleMin').value||10),
+    durationSec: Number($('ssDuration').value||10),
+    bgmUrl: ssBgmUrl||'',
+    bgmTitle: ssBgmTitle||'',
+  };
+  localStorage.setItem(SS_KEY, JSON.stringify(s));
+  updateBgmNow();
+}
+function loadSsSettingsUI(){
+  loadSsSettings();
+  $('ssEnabled').checked = ssEnabledFlag;
+  $('ssIdleMin').value = Math.round(ssIdleMs/60000);
+  $('ssDuration').value = window.__ssDurationSec;
+  updateBgmNow();
+}
+function updateBgmNow(){
+  const el=$('bgmNow');
+  el.textContent = ssBgmUrl ? `選択中：${ssBgmTitle || '(タイトルなし)'}` : '（未選択）';
+}
+$('btnSsBack').addEventListener('click', gotoMain);
+$('btnSsSave').addEventListener('click', ()=>{
+  saveSsSettingsUI();
+  alert('保存しました');
+  resetIdleTimer();
+});
+$('btnSsTest').addEventListener('click', ()=>{
+  saveSsSettingsUI();
+  startSlideShow();
+});
+
+/* メディア選択（写真・動画のみ：従来通り） */
+$('ssFiles').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files||[]);
+  const list = [];
+  for (const f of files){
+    if (!/^image\/|^video\//.test(f.type)) continue;
+    // 軽量化（画像のみ）：最大長辺は画面に合わせる
+    if (f.type.startsWith('image/')){
+      const url = await downscaleImageFile(f);
+      list.push({type:'image', url});
+    }else{
+      const url = URL.createObjectURL(f);
+      list.push({type:'video', url});
+    }
+  }
+  ssFilesArr = list;
+  localStorage.setItem(SS_MEDIA_KEY, JSON.stringify(ssFilesArr));
+});
+$('clearMedia').addEventListener('click', ()=>{
+  ssFilesArr = []; localStorage.setItem(SS_MEDIA_KEY,'[]');
+  $('ssFiles').value = '';
+});
+
+/* ===== BGM 選択（BGM管理アプリへ） ===== */
+$('btnPickBgm').addEventListener('click', openBgmPicker);
+$('clearBgm').addEventListener('click', ()=>{
+  ssBgmUrl=''; ssBgmTitle='';
+  saveSsSettingsUI();
+});
+
+/* 画像ダウンスケール（画面サイズ基準） */
+async function downscaleImageFile(file){
+  const bitmap = await createImageBitmap(file);
+  const maxW = window.innerWidth;
+  const maxH = window.innerHeight;
+  const scale = Math.min(1, Math.min(maxW / bitmap.width, maxH / bitmap.height));
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+  const c = new OffscreenCanvas(w, h);
+  const ctx = c.getContext('2d', { alpha:false });
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  const blob = await c.convertToBlob({ type:'image/jpeg', quality:0.85 });
+  return URL.createObjectURL(blob);
+}
+
+/* アイドル監視 */
+['mousemove','mousedown','touchstart','keydown','pointerdown'].forEach(ev=>{
+  window.addEventListener(ev, resetIdleTimer, {passive:true});
+});
+function resetIdleTimer(){
+  if (ssTimer) clearTimeout(ssTimer);
+  loadSsSettings();
+  if (!ssEnabledFlag || ssFilesArr.length===0){ stopSlideShow(); return; }
+  ssTimer = setTimeout(startSlideShow, ssIdleMs);
+}
+function startSlideShow(){
+  if (!ssEnabledFlag || ssFilesArr.length===0) return;
+  ssRunning = true;
+  ssIndex = 0; ssShowingA = true;
+  ssOverlay.style.display='flex';
+  // BGM（ループ）
+  if (ssBgmUrl){
+    if (ssAudio){ try{ ssAudio.pause(); }catch{} }
+    ssAudio = new Audio(ssBgmUrl);
+    ssAudio.crossOrigin = 'anonymous';
+    ssAudio.loop = true;
+    ssAudio.play().catch(()=>{});
+  }
+  showNext();
+}
+function stopSlideShow(){
+  if (!ssRunning) return;
+  ssRunning=false;
+  ssOverlay.style.display='none';
+  ssLayerA.innerHTML=''; ssLayerB.innerHTML='';
+  if (ssAudio){ try{ ssAudio.pause(); }catch{} }
+}
+ssOverlay.addEventListener('click', ()=>{ stopSlideShow(); resetIdleTimer(); });
+function showNext(){
+  if (!ssRunning) return;
+  const item = ssFilesArr[ssIndex % ssFilesArr.length];
+  const dur = Math.max(3, window.__ssDurationSec||10);
+  const layer = ssShowingA ? ssLayerB : ssLayerA; // 次に出すレイヤ
+  layer.innerHTML='';
+  if (item.type==='image'){
+    const img = document.createElement('img');
+    img.src = item.url; img.className='ssImg';
+    layer.appendChild(img);
+    placeAndKenBurns(img);
+    crossfade();
+    setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+  }else{
+    const vd = document.createElement('video');
+    vd.src=item.url; vd.className='ssVid'; vd.autoplay=true; vd.loop=false; vd.muted=true; vd.playsInline=true;
+    vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, {once:true});
+    vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
+    layer.appendChild(vd);
+  }
+}
+function crossfade(){
+  const show = ssShowingA ? ssLayerB : ssLayerA;
+  const hide = ssShowingA ? ssLayerA : ssLayerB;
+  show.classList.add('show');
+  hide.classList.remove('show');
+  ssShowingA = !ssShowingA;
+}
+function placeAndKenBurns(img){
+  const startScale = 1.05, endScale = 1.15;
+  const dx = (Math.random()<0.5? -1:1) * 20;
+  const dy = (Math.random()<0.5? -1:1) * 12;
+  img.style.transformOrigin='center center';
+  img.style.transform='translate(-50%,-50%) scale(1)';
+  img.animate([
+    { transform:`translate(-50%,-50%) scale(${startScale}) translate(0px,0px)` },
+    { transform:`translate(-50%,-50%) scale(${endScale}) translate(${dx}px,${dy}px)` }
+  ], { duration: Math.max(3000, (window.__ssDurationSec||10)*1000), easing:'ease-in-out', fill:'forwards' });
+}
+
+/* 初期ロード時のアイドル監視開始 */
+loadSsSettings();
+resetIdleTimer();
+
+/* ========= ここから：BGMピッカー連携 ========= */
+function fmtSize(n){
+  const v=Number(n); if(!isFinite(v)||v<=0) return '—';
+  if(v>=1024*1024*1024) return (v/1024/1024/1024).toFixed(2)+' GB';
+  if(v>=1024*1024) return (v/1024/1024).toFixed(1)+' MB';
+  if(v>=1024) return Math.round(v/1024)+' KB';
+  return v+' B';
+}
+function fmtDate(iso){
+  try{
+    if(!iso) return '—';
+    const d=new Date(iso); if(isNaN(d)) return '—';
+    const p=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }catch{ return '—'; }
+}
+
+async function getPlayableUrlFromBgmApp(id){
+  // まず geturl（署名付きURLがあればそれを使用）、ダメなら download
+  try{
+    const r = await fetch(`${BGM_API_BASE}/geturl?id=${encodeURIComponent(id)}`, { mode:'cors', credentials:'omit' });
+    if(r.ok){
+      const js = await r.json().catch(()=>null);
+      if(js && js.ok && js.url) return js.url;
+    }
+  }catch{}
+  return `${BGM_API_BASE}/download?id=${encodeURIComponent(id)}`;
+}
+
+let __bgmPicked = null; // {id,title,url}
+
+function openBgmPicker(){
+  __bgmPicked = null;
+  $('bgmPickMsg').textContent = '';
+  $('bgmPreview').src='';
+  $('bgmPicker').style.display='flex';
+  loadBgmList();
+}
+function closeBgmPicker(){ $('bgmPicker').style.display='none'; }
+
+$('bgmCancel').addEventListener('click', closeBgmPicker);
+$('bgmOk').addEventListener('click', ()=>{
+  if(!__bgmPicked){ alert('BGMを選択してください。'); return; }
+  ssBgmUrl = __bgmPicked.url;
+  ssBgmTitle = __bgmPicked.title || '';
+  saveSsSettingsUI();
+  closeBgmPicker();
+  alert('BGMを設定しました');
+});
+
+$('bgmReload').addEventListener('click', loadBgmList);
+
+async function loadBgmList(){
+  const tbody = $('bgmTbody');
+  tbody.innerHTML = `<tr><td colspan="4" class="center muted">読み込み中…</td></tr>`;
+  try{
+    const r = await fetch(`${BGM_API_BASE}/list`, { mode:'cors', credentials:'omit' });
+    const js = await r.json();
+    if(!(js && js.ok && Array.isArray(js.items))) throw new Error('一覧が取得できません');
+    if(js.items.length===0){
+      tbody.innerHTML = `<tr><td colspan="4" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>`;
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    js.items.forEach(it=>{
+      const tr = document.createElement('tr');
+      tr.className = 'pick-row';
+      tr.innerHTML = `
+        <td class="title">${escapeHtml(it.title || it.key || it.id || '')}</td>
+        <td>${fmtDate(it.date)}</td>
+        <td class="right">${fmtSize(it.size)}</td>
+        <td class="center">
+          <button class="btn btn-preview" data-id="${it.id}" data-title="${escapeHtml(it.title || '')}">試聴</button>
+        </td>
+      `;
+      tr.addEventListener('dblclick', async ()=>{
+        await previewAndPick(it);
+      });
+      frag.appendChild(tr);
+    });
+    tbody.innerHTML='';
+    tbody.appendChild(frag);
+  }catch(err){
+    tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>`;
+  }
+}
+document.addEventListener('click', async (ev)=>{
+  const btn = ev.target.closest('#bgmPicker .btn-preview');
+  if(!btn) return;
+  const row = btn.closest('tr');
+  const title = btn.dataset.title || row?.querySelector('.title')?.textContent || '';
+  const id = btn.dataset.id || title;
+  if(!id) return;
+  await previewAndPick({ id, title });
+});
+
+async function previewAndPick(it){
+  try{
+    $('bgmPickMsg').textContent = 'URL 取得中…';
+    const url = await getPlayableUrlFromBgmApp(it.id);
+    const bust = (url.includes('?')?'&':'?')+'v='+Date.now();
+    const a = $('bgmPreview');
+    a.pause();
+    a.src = url + bust;
+    await a.play().catch(()=>{});
+    __bgmPicked = { id: it.id, title: it.title || '', url };
+    $('bgmPickMsg').textContent = `選択中：${it.title || '(タイトルなし)'}`;
+  }catch(e){
+    $('bgmPickMsg').textContent = '再生に失敗しました';
+  }
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+</script>
 </body>
 </html>
