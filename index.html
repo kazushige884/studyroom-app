@@ -51,11 +51,24 @@
   gap:6px;
   align-items:flex-start;
 }
-#view-ss .file-row .main-btn{ justify-self:start; } /* 主ボタンの左端を中央線に揃える */
-#view-ss .file-row .pull-right{ justify-self:end; } /* 解除ボタンを右端へ */
-#view-ss .file-row .status{ white-space:nowrap; margin-left:12px; opacity:.85; }
-/* 旧 flex 指定は不要。最小幅だけ残す */
-#view-ss .file-row input[type="file"]{ min-width:0 }
+
+/* 2行目（ボタン群）のレイアウト：左～中央の要素のあと、
+   .push-right を付けたボタンだけ右端へ寄せる */
+#view-ss .file-row > div{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+}
+
+#view-ss .file-row .push-right{
+  margin-left:auto;
+}
+
+/* ファイル入力は自然幅のまま（必要なら min-width 調整） */
+#view-ss .file-row input[type="file"]{
+  min-width:0;
+}
   #view-ss .note{color:#9aa0a6}
 
   /* ===== ③ メインメニュー ===== */
@@ -286,16 +299,17 @@
   <label>写真・動画（複数可）</label>
   <div>
     <input id="ssFiles" type="file" accept="image/*,video/mp4,video/webm" multiple />
-    <button id="clearMedia" class="btn ghost">選択を解除</button>
+    <button id="clearMedia" class="btn ghost push-right">選択を解除</button>
   </div>
 </div>
-      <div class="file-row" style="margin-top:8px">
+</div>
+      <<div class="file-row" style="margin-top:8px">
   <label>BGM</label>
   <div>
     <button id="btnPickBgm" class="btn ghost">BGMを選ぶ</button>
-    <button id="clearBgm" class="btn ghost">選択を解除</button>
     <span class="note">選択中：</span>
     <span id="bgmNow" class="note">（未選択）</span>
+    <button id="clearBgm" class="btn ghost push-right">選択を解除</button>
   </div>
 </div>
     </div>
