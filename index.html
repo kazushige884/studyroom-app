@@ -46,11 +46,10 @@
   #view-ss .btn.ghost{background:#1b1b1b;color:#fff;border:1px solid var(--border)}
   #view-ss .btn.primary{background:#fff;color:#000}
   #view-ss .file-row{
-  display:grid;
-  /* ラベル / 主ボタン(=ファイル選択 or BGMを選ぶ) / 右側の伸びる余白（→解除ボタンを右端へ寄せられる） */
-  grid-template-columns: 12em auto 1fr;
-  gap:8px;
-  align-items:center;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:flex-start;
 }
 #view-ss .file-row .main-btn{ justify-self:start; } /* 主ボタンの左端を中央線に揃える */
 #view-ss .file-row .pull-right{ justify-self:end; } /* 解除ボタンを右端へ */
@@ -285,21 +284,19 @@
     <div class="card">
       <div class="file-row">
   <label>写真・動画（複数可）</label>
-  <input id="ssFiles" type="file" accept="image/*,video/mp4,video/webm" multiple class="main-btn" />
-  <button id="clearMedia" class="btn ghost pull-right">選択を解除</button>
+  <div>
+    <input id="ssFiles" type="file" accept="image/*,video/mp4,video/webm" multiple />
+    <button id="clearMedia" class="btn ghost">選択を解除</button>
+  </div>
 </div>
       <div class="file-row" style="margin-top:8px">
   <label>BGM</label>
-
-  <!-- 主ボタン（中央線に左端を揃える）＋ 状態表示を同じカラム内に -->
-  <div class="main-btn" style="display:flex;align-items:center;gap:12px">
+  <div>
     <button id="btnPickBgm" class="btn ghost">BGMを選ぶ</button>
-    <span class="note status">選択中：</span>
+    <button id="clearBgm" class="btn ghost">選択を解除</button>
+    <span class="note">選択中：</span>
     <span id="bgmNow" class="note">（未選択）</span>
   </div>
-
-  <!-- 解除ボタンは右端へ -->
-  <button id="clearBgm" class="btn ghost pull-right">選択を解除</button>
 </div>
     </div>
 
