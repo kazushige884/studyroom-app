@@ -1149,6 +1149,12 @@ window.addEventListener('load', ()=>{ flushLogQueue(); loadSsSettings(); resetId
 const SS_KEY = 'ss.settings.v1';
 const SS_MEDIA_KEY = 'ss.media.v1';
 let ssTimer=null, ssIdleMs=600000;
+
+// 追加: iPad は保存せず直接再生するモード
+const isIOSLike = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let ssTransientMode = isIOSLike;
+let ssPickedFiles = [];
+let __currentObjectUrl = null;
 let ssEnabledFlag = false;
 let ssFilesArr = []; // {type:'image'|'video', url:objectURL}
 let ssBgmUrl = '';
@@ -1210,30 +1216,52 @@ $('btnSsTest').addEventListener('click', ()=>{
 /* メディア選択 */
 $('ssFiles').addEventListener('change', async (e)=>{
   const files = Array.from(e.target.files||[]);
-  const list = [];
-  for (const f of files){
-    if (!/^image\/|^video\//.test(f.type)) continue;
-    if (f.type.startsWith('image/')){
-      const url = await downscaleImageFile(f);
-      list.push({type:'image', url});
-    }else{
-      const url = URL.createObjectURL(f);
-      list.push({type:'video', url});
+
+  // 再生中URLを解放
+  try{
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(__currentObjectUrl);
     }
+  }catch{}
+  __currentObjectUrl = null;
+
+  if (ssTransientMode) {
+    // iPad: 保存せずに直接再生
+    ssPickedFiles = files;
+    ssFilesArr = files.map(f => ({ type: f.type.startsWith('image/') ? 'image' : 'video' }));
+  } else {
+    // 従来: ダウンサンプル＋保存
+    const list = [];
+    for (const f of files){
+      if (!/^image\/|^video\//.test(f.type)) continue;
+      if (f.type.startsWith('image/')){
+        const url = await downscaleImageFile(f);
+        list.push({type:'image', url});
+      }else{
+        const url = URL.createObjectURL(f);
+        list.push({type:'video', url});
+      }
+    }
+    ssPickedFiles = [];
+    ssFilesArr = list;
+    localStorage.setItem(SS_MEDIA_KEY, JSON.stringify(ssFilesArr));
   }
-  ssFilesArr = list;
-  localStorage.setItem(SS_MEDIA_KEY, JSON.stringify(ssFilesArr));
 });
 $('clearMedia').addEventListener('click', ()=>{
-  // 1) これまでに作った blob: URL を開放してメモリを解放
+  // 再生中URLを解放
   try{
-    // まず現在メモリ上の配列
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(__currentObjectUrl);
+    }
+  }catch{}
+  __currentObjectUrl = null;
+
+  try{
     (Array.isArray(ssFilesArr)? ssFilesArr : []).forEach(it=>{
       if(it && typeof it.url === 'string' && it.url.startsWith('blob:')){
         try{ URL.revokeObjectURL(it.url); }catch{}
       }
     });
-    // ついでに localStorage 側に残っているURL文字列も（同一セッションなら有効）
     const prev = JSON.parse(localStorage.getItem(SS_MEDIA_KEY) || '[]');
     (Array.isArray(prev)? prev : []).forEach(it=>{
       if(it && typeof it.url === 'string' && it.url.startsWith('blob:')){
@@ -1242,19 +1270,15 @@ $('clearMedia').addEventListener('click', ()=>{
     });
   }catch{}
 
-  // 2) 保存データを完全削除（上書きではなく removeItem で容量回復を確実に）
   try{ localStorage.removeItem(SS_MEDIA_KEY); }catch{}
 
-  // 3) 状態クリア
   ssFilesArr = [];
-  const fi = $('ssFiles');
-  if (fi) fi.value = '';
+  ssPickedFiles = [];
+  const fi = $('ssFiles'); if (fi) fi.value = '';
 
-  // 4) スライドショーのアイドル監視をリセット（誤起動防止）
   if (typeof resetIdleTimer === 'function') resetIdleTimer();
 
-  // 5) 完了通知
-  alert('選択したメディアを解除し、保存データも削除しました。空き容量が回復します。');
+  alert('選択を解除しました（保存データも削除／URL解放済み）');
 });
 
 /* BGM 選択 */
@@ -1344,6 +1368,15 @@ function stopSlideShow(){
   ssRunning=false;
   ssOverlay.style.display='none';
   ssLayerA.innerHTML=''; ssLayerB.innerHTML='';
+
+  // 再生中のURLを解放
+  try{
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(__currentObjectUrl);
+    }
+  }catch{}
+  __currentObjectUrl = null;
+
   if (ssAudio){ try{ ssAudio.pause(); }catch{} }
 }
 ssOverlay.addEventListener('click', ()=>{ stopSlideShow(); resetIdleTimer(); });
@@ -1353,20 +1386,47 @@ function showNext(){
   const dur = Math.max(3, window.__ssDurationSec||10);
   const layer = ssShowingA ? ssLayerB : ssLayerA; // 次に出すレイヤ
   layer.innerHTML='';
-  if (item.type==='image'){
-    const img = document.createElement('img');
-    img.src = item.url; img.className='ssImg';
-    layer.appendChild(img);
-    placeAndKenBurns(img);
-    crossfade();
-    setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
-  }else{
-    const vd = document.createElement('video');
-    vd.src=item.url; vd.className='ssVid'; vd.autoplay=true; vd.loop=false; vd.muted=true; vd.playsInline=true;
-    vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, {once:true});
-    vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
-    layer.appendChild(vd);
+  // 直前のURLを解放
+try{
+  if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(__currentObjectUrl);
   }
+}catch{}
+__currentObjectUrl = null;
+
+// URLをその場で生成
+const makeUrlForIndex = (idx)=>{
+  if (ssTransientMode) {
+    const f = ssPickedFiles[idx % ssPickedFiles.length];
+    if (!f) return null;
+    return URL.createObjectURL(f);
+  } else {
+    return ssFilesArr[idx % ssFilesArr.length].url || null;
+  }
+};
+
+if (item.type==='image'){
+  const url = makeUrlForIndex(ssIndex);
+  if (!url){ ssIndex++; return showNext(); }
+  __currentObjectUrl = url;
+
+  const img = document.createElement('img');
+  img.src = url; img.className='ssImg';
+  layer.appendChild(img);
+  placeAndKenBurns(img);
+  crossfade();
+  setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+}else{
+  const url = makeUrlForIndex(ssIndex);
+  if (!url){ ssIndex++; return showNext(); }
+  __currentObjectUrl = url;
+
+  const vd = document.createElement('video');
+  vd.src=url; vd.className='ssVid'; vd.autoplay=true; vd.loop=false; vd.muted=true; vd.playsInline=true;
+  vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, {once:true});
+  vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
+  layer.appendChild(vd);
+}
 }
 function crossfade(){
   const show = ssShowingA ? ssLayerB : ssLayerA;
