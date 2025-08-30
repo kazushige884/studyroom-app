@@ -639,9 +639,18 @@ function renderEditor(){
       const startPress=(e)=>{ e.preventDefault(); pressTimer=setTimeout(()=> seatPrompt(), 500); };
       const cancelPress=()=>{ if(pressTimer){clearTimeout(pressTimer);pressTimer=null;} };
       const seatPrompt=()=>{
-        const v=prompt('座席番号を入力（空で取消）', st.t===2?(st.n||''):'');
-        if(v!=null && v.trim()!==''){ editor.grid[y][x]={t:2,n:v.trim()}; saveLayout(editor.grid); renderEditor(); }
-      };
+  const v=prompt('座席番号を入力（空で取消）', st.t===2?(st.n||''):'');
+  if(v!=null && v.trim()!==''){ 
+    editor.grid[y][x]={t:2,n:v.trim()}; 
+    saveLayout(editor.grid);
+    // セルだけ更新
+    d.innerHTML='';
+    const s=document.createElement('span'); 
+    s.textContent=v.trim(); 
+    d.appendChild(s);
+    d.className='cell '+clsEdit(2);
+  }
+};
       d.addEventListener('contextmenu', e=>{ e.preventDefault(); seatPrompt(); });
       d.addEventListener('touchstart', startPress, {passive:false});
       d.addEventListener('mousedown', startPress);
