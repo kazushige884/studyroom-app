@@ -485,13 +485,14 @@
     <div style="max-height:50vh;overflow:auto;border:1px solid #333;border-radius:10px">
       <table>
         <thead>
-          <tr>
-            <th>Title</th>
-            <th style="width:200px">DATE</th>
-            <th style="width:120px" class="right">SIZE</th>
-            <th style="width:120px" class="center">操作</th>
-          </tr>
-        </thead>
+  <tr>
+    <th>Title</th>
+    <th style="width:200px">DATE</th>
+    <th style="width:120px" class="right">DURATION</th>
+    <th style="width:120px" class="right">SIZE</th>
+    <th style="width:120px" class="center">操作</th>
+  </tr>
+</thead>
         <tbody id="bgmTbody">
           <tr><td colspan="4" class="center muted">読み込み中…</td></tr>
         </tbody>
@@ -1290,24 +1291,47 @@ function fmtSize(n){
   if(v>=1024) return Math.round(v/1024)+' KB';
   return v+' B';
 }
-function fmtDate(iso){
+function fmtDate(any){
   try{
+    const iso = any || '';
     if(!iso) return '—';
-    const d=new Date(iso); if(isNaN(d)) return '—';
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
     const p=n=>String(n).padStart(2,'0');
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }catch{ return '—'; }
 }
+function fmtDuration(sec){
+  const s = Number(sec);
+  if(!isFinite(s) || s<=0) return '—';
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const ss = Math.floor(s%60);
+  const z = n => String(n).padStart(2,'0');
+  return h>0 ? `${h}:${z(m)}:${z(ss)}` : `${m}:${z(ss)}`;
+}
 
 async function getPlayableUrlFromBgmApp(id){
+  const ensureAbs = (u)=>{
+    if(!u) return '';
+    // 相対パスならベースを前置
+    if(/^https?:\/\//i.test(u)) return u;
+    return `${BGM_API_BASE}${u.startsWith('/') ? '' : '/'}${u}`;
+  };
+  // 優先: geturl -> (url or path)
   try{
     const r = await fetch(`${BGM_API_BASE}/geturl?id=${encodeURIComponent(id)}`, { mode:'cors', credentials:'omit' });
     if(r.ok){
       const js = await r.json().catch(()=>null);
-      if(js && js.ok && js.url) return js.url;
+      const u = js?.url || js?.path;
+      if(u) return ensureAbs(u);
     }
   }catch{}
-  return `${BGM_API_BASE}/download?id=${encodeURIComponent(id)}`;
+  // 次善: stream エンドポイント（あれば）
+  const fallbackStream = `${BGM_API_BASE}/stream?id=${encodeURIComponent(id)}`;
+  // 末尾: download エンドポイント
+  const fallbackDownload = `${BGM_API_BASE}/download?id=${encodeURIComponent(id)}`;
+  return fallbackStream || fallbackDownload;
 }
 
 let __bgmPicked = null; // {id,title,url}
@@ -1335,34 +1359,53 @@ $('bgmReload').addEventListener('click', loadBgmList);
 
 async function loadBgmList(){
   const tbody = $('bgmTbody');
-  tbody.innerHTML = `<tr><td colspan="4" class="center muted">読み込み中…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="5" class="center muted">読み込み中…</td></tr>`;
   try{
     const r = await fetch(`${BGM_API_BASE}/list`, { mode:'cors', credentials:'omit' });
     const js = await r.json();
-    if(!(js && js.ok && Array.isArray(js.items))) throw new Error('一覧が取得できません');
-    if(js.items.length===0){
-      tbody.innerHTML = `<tr><td colspan="4" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>`;
+
+    if(!(js && (Array.isArray(js.items) || Array.isArray(js.data)))) {
+      throw new Error('一覧が取得できません');
+    }
+    const raw = js.items || js.data || [];
+
+    // 返却フィールドのゆらぎを吸収
+    const items = raw.map(it => ({
+      id: it.id || it.key || it.uuid || it.name,               // 一意なキー
+      title: it.title || it.name || it.filename || it.key || '',
+      date: it.date || it.updatedAt || it.updated_at || it.mtime || it.lastModified,
+      size: it.size || it.bytes || it.length,
+      durationSec: it.durationSec || it.duration || (it.meta && (it.meta.durationSec || it.meta.duration)) || null
+    }));
+
+    if(items.length===0){
+      tbody.innerHTML = `<tr><td colspan="5" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>`;
       return;
     }
+
     const frag = document.createDocumentFragment();
-    js.items.forEach(it=>{
+    items.forEach(it=>{
       const tr = document.createElement('tr');
       tr.className = 'pick-row';
       tr.innerHTML = `
-        <td class="title">${escapeHtml(it.title || it.key || it.id || '')}</td>
+        <td class="title">${escapeHtml(it.title)}</td>
         <td>${fmtDate(it.date)}</td>
+        <td class="right">${fmtDuration(it.durationSec)}</td>
         <td class="right">${fmtSize(it.size)}</td>
         <td class="center">
-          <button class="btn btn-preview" data-id="${it.id}" data-title="${escapeHtml(it.title || '')}">試聴</button>
+          <button class="btn btn-preview" data-id="${encodeURIComponent(it.id||'')}" data-title="${escapeHtml(it.title || '')}">試聴</button>
         </td>
       `;
-      tr.addEventListener('dblclick', async ()=>{ await previewAndPick(it); });
+      tr.addEventListener('dblclick', async ()=>{
+        await previewAndPick({ id: it.id, title: it.title });
+      });
       frag.appendChild(tr);
     });
+
     tbody.innerHTML='';
     tbody.appendChild(frag);
   }catch(err){
-    tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>`;
   }
 }
 document.addEventListener('click', async (ev)=>{
@@ -1376,18 +1419,34 @@ document.addEventListener('click', async (ev)=>{
 });
 
 async function previewAndPick(it){
+  const msg = $('bgmPickMsg');
+  const a = $('bgmPreview');
   try{
-    $('bgmPickMsg').textContent = 'URL 取得中…';
+    msg.textContent = 'URL 取得中…';
     const url = await getPlayableUrlFromBgmApp(it.id);
-    const bust = (url.includes('?')?'&':'?')+'v='+Date.now();
-    const a = $('bgmPreview');
-    a.pause();
-    a.src = url + bust;
-    await a.play().catch(()=>{});
+    const withBust = url + ((url.includes('?')?'&':'?')+'v='+Date.now());
+
+    // CORS / 再生安定化
+    try{ a.pause(); }catch{}
+    a.removeAttribute('src'); // 古いソースをクリア
+    a.load();
+    a.crossOrigin = 'anonymous';
+    a.src = withBust;
+
+    // エラー監視
+    let errorOnce = false;
+    a.onerror = ()=>{
+      if(errorOnce) return;
+      errorOnce = true;
+      msg.textContent = '試聴エラー：音源にアクセスできません';
+    };
+
+    // ユーザー操作起因なので play は許可されるはず
+    await a.play();
     __bgmPicked = { id: it.id, title: it.title || '', url };
-    $('bgmPickMsg').textContent = `選択中：${it.title || '(タイトルなし)'}`;
+    msg.textContent = `選択中：${it.title || '(タイトルなし)'}`;
   }catch(e){
-    $('bgmPickMsg').textContent = '再生に失敗しました';
+    msg.textContent = '再生に失敗しました';
   }
 }
 
