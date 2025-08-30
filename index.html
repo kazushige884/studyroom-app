@@ -1371,7 +1371,13 @@ function openBgmPicker(){
   $('bgmPicker').style.display='flex';
   loadBgmList();
 }
-function closeBgmPicker(){ $('bgmPicker').style.display='none'; }
+function closeBgmPicker(){
+  const a = $('bgmPreview');
+  try{ a.pause(); }catch{}
+  a.removeAttribute('src'); // バッファも消す
+  a.load();
+  $('bgmPicker').style.display='none';
+}
 
 $('bgmCancel').addEventListener('click', closeBgmPicker);
 $('bgmOk').addEventListener('click', ()=>{
