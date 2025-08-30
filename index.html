@@ -1172,14 +1172,17 @@ function loadSsSettings(){
   }
 }
 function saveSsSettingsUI(){
+  // 入力値を即時にグローバルへ反映し、テスト開始直後のズレを解消
+  const dur = Math.max(3, Number($('ssDuration').value || 10)); // 入力min=3と整合
   const s = {
     enabled: $('ssEnabled').checked,
-    idleMin: Number($('ssIdleMin').value||10),
-    durationSec: Number($('ssDuration').value||10),
-    bgmUrl: ssBgmUrl||'',
-    bgmTitle: ssBgmTitle||'',
+    idleMin: Number($('ssIdleMin').value || 10),
+    durationSec: dur,
+    bgmUrl: ssBgmUrl || '',
+    bgmTitle: ssBgmTitle || '',
   };
   localStorage.setItem(SS_KEY, JSON.stringify(s));
+  window.__ssDurationSec = dur; // ← ここがポイント：すぐに startSlideShow が新秒数を使う
   updateBgmNow();
 }
 function loadSsSettingsUI(){
