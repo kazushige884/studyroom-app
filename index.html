@@ -487,14 +487,12 @@
         <thead>
   <tr>
     <th>Title</th>
-    <th style="width:200px">DATE</th>
     <th style="width:120px" class="right">DURATION</th>
-    <th style="width:120px" class="right">SIZE</th>
     <th style="width:120px" class="center">操作</th>
   </tr>
 </thead>
         <tbody id="bgmTbody">
-  <tr><td colspan="5" class="center muted">読み込み中…</td></tr>
+  <tr><td colspan="3" class="center muted">読み込み中…</td></tr>
 </tbody>
       </table>
     </div>
@@ -1401,13 +1399,10 @@ async function loadBgmList(){
 
     // ゆらぎ吸収：最低限 id と title があればOK
     const items = raw.map(it => ({
-      id: it.id || it.key || it.uuid || it.name || it.title || it.filename,
-      title: it.title || it.name || it.filename || it.key || '(untitled)',
-      // 以下は存在すれば使う。無ければ後段で補完する
-      date: it.date || it.updatedAt || it.updated_at || it.mtime || it.lastModified || null,
-      size: it.size || it.bytes || it.length || it.contentLength || null,
-      durationSec: it.durationSec || it.duration || (it.meta && (it.meta.durationSec || it.meta.duration)) || null
-    })).filter(it => !!it.id);
+  id: it.id || it.key || it.uuid || it.name || it.title || it.filename,
+  title: it.title || it.name || it.filename || it.key || '(untitled)',
+  durationSec: it.durationSec || it.duration || (it.meta && (it.meta.durationSec || it.meta.duration)) || null
+})).filter(it => !!it.id);
 
     if(items.length===0){
       tbody.innerHTML = `<tr><td colspan="5" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>`;
@@ -1420,17 +1415,13 @@ async function loadBgmList(){
       const tr = document.createElement('tr');
       tr.className = 'pick-row';
       tr.innerHTML = `
-        <td class="title">${escapeHtml(it.title)}</td>
-        <td class="cell-date">—</td>
-        <td class="right cell-dur">—</td>
-        <td class="right cell-size">—</td>
-        <td class="center">
-          <button class="btn btn-preview" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}">試聴</button>
-        </td>
-      `;
+  <td class="title">${escapeHtml(it.title)}</td>
+  <td class="right cell-dur">—</td>
+  <td class="center">
+    <button class="btn btn-preview" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}">試聴</button>
+  </td>
+`;
       // 先にサーバが出しているフィールドがあれば反映
-      if (it.date)  tr.querySelector('.cell-date').textContent = fmtDate(it.date);
-      if (it.size)  tr.querySelector('.cell-size').textContent = fmtSize(it.size);
       if (it.durationSec) tr.querySelector('.cell-dur').textContent = fmtDuration(it.durationSec);
 
       tr.addEventListener('dblclick', async ()=>{
@@ -1475,18 +1466,6 @@ document.addEventListener('click', async (ev)=>{
 // 追加: HEAD と <audio> metadata で DATE / SIZE / DURATION を補完
 async function fillBgmMeta(row, baseUrl){
   const withBust = baseUrl + ((baseUrl.includes('?')?'&':'?')+'v='+Date.now());
-
-  // 1) HEADで Content-Length / Last-Modified
-  try{
-    const hr = await fetch(withBust, { method:'HEAD' });
-    const len = hr.headers.get('content-length');
-    const lm  = hr.headers.get('last-modified');
-
-    if(len) row.querySelector('.cell-size').textContent = fmtSize(parseInt(len,10));
-    if(lm)  row.querySelector('.cell-date').textContent = fmtDate(lm);
-  }catch{ /* 無視 */ }
-
-  // 2) <audio> の loadedmetadata で duration
   try{
     const a = new Audio();
     a.crossOrigin = 'anonymous';
@@ -1500,11 +1479,10 @@ async function fillBgmMeta(row, baseUrl){
     if (isFinite(a.duration) && a.duration > 0){
       row.querySelector('.cell-dur').textContent = fmtDuration(Math.round(a.duration));
     }
-    // 後片付け
     try{ a.pause(); }catch{}
     a.removeAttribute('src');
     a.load();
-  }catch{ /* 無視 */ }
+  }catch{}
 }
 
 async function previewAndPick(it){
