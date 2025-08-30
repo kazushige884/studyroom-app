@@ -609,6 +609,10 @@ unlockInput.addEventListener('input',()=>localStorage.setItem(KEY_UNLOCK,(unlock
 
 /* ===== ④ レイアウトエディタ ===== */
 const editor = { grid: null, cellsEl: $('cells'), nameEl: $('roomName') };
+
+/* --- 座席番号プロンプトの二重起動ガード --- */
+let __seatPromptOpen = false;        // ダイアログ表示中フラグ
+let __seatPromptBlockUntil = 0;      // 再描画直後の再起動を抑制するための時刻(ms)
 function makeAll(t){ return Array.from({length:SIZE},()=>Array.from({length:SIZE},()=>({t,n:null}))); }
 function clsEdit(t){ return t===0?'st-wall':t===1?'st-hall':t===2?'st-seat':'st-door'; }
 function loadLayout(){ try{const raw=localStorage.getItem(KEY_LAYOUT);return raw?JSON.parse(raw):null;}catch{return null} }
@@ -635,26 +639,43 @@ function renderEditor(){
         editor.grid[y][x]={t:next,n:null}; saveLayout(editor.grid); renderEditor();
       });
       // 長押し or 右クリック：座席番号
-      let pressTimer=null;
-      const startPress=(e)=>{ e.preventDefault(); pressTimer=setTimeout(()=> seatPrompt(), 500); };
-      const cancelPress=()=>{ if(pressTimer){clearTimeout(pressTimer);pressTimer=null;} };
-      const seatPrompt=()=>{
-  const v=prompt('座席番号を入力（空で取消）', st.t===2?(st.n||''):'');
-  if(v!=null && v.trim()!==''){ 
-    editor.grid[y][x]={t:2,n:v.trim()}; 
-    saveLayout(editor.grid);
-    // セルだけ更新
-    d.innerHTML='';
-    const s=document.createElement('span'); 
-    s.textContent=v.trim(); 
-    d.appendChild(s);
-    d.className='cell '+clsEdit(2);
-  }
-};
-      d.addEventListener('contextmenu', e=>{ e.preventDefault(); seatPrompt(); });
-      d.addEventListener('touchstart', startPress, {passive:false});
+            let pressTimer = null;
+      const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+
+      const startPress = (e) => {
+        e.preventDefault();
+        // ダイアログ中 or 直後のブロック中は起動させない
+        if (__seatPromptOpen || Date.now() < __seatPromptBlockUntil) return;
+        pressTimer = setTimeout(() => {
+          if (__seatPromptOpen || Date.now() < __seatPromptBlockUntil) return;
+          seatPrompt();
+        }, 500);
+      };
+
+      const seatPrompt = () => {
+        if (__seatPromptOpen) return;          // 多重起動防止
+        __seatPromptOpen = true;
+        cancelPress();                          // 念のため長押しタイマー解除
+
+        const v = prompt('座席番号を入力（空で取消）', st.t===2 ? (st.n||'') : '');
+        if (v != null && v.trim() !== '') {
+          editor.grid[y][x] = { t: 2, n: v.trim() };
+          saveLayout(editor.grid);
+        }
+
+        __seatPromptOpen = false;
+        __seatPromptBlockUntil = Date.now() + 800; // 再描画直後の誤起動を抑制
+        renderEditor();
+      };
+
+      d.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (__seatPromptOpen || Date.now() < __seatPromptBlockUntil) return;
+        seatPrompt();
+      });
+      d.addEventListener('touchstart', startPress, { passive: false });
       d.addEventListener('mousedown', startPress);
-      ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev=>d.addEventListener(ev, cancelPress));
+      ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev => d.addEventListener(ev, cancelPress));
 
       editor.cellsEl.appendChild(d);
     }
