@@ -702,8 +702,8 @@ function renderRun(){
   if(!g){ liveGrid.innerHTML='<div style="opacity:.7">レイアウトが見つかりません（レイアウト作成で保存してください）</div>'; return; }
   const {minX,minY,maxX,maxY}=computeCroppedArea(g);
   const cols=maxX-minX+1, rows=maxY-minY+1;
-  liveGrid.style.gridTemplateColumns=`repeat(${cols}, var(--cell))`;
-  liveGrid.style.gridTemplateRows=`repeat(${rows}, var(--cell))`;
+  liveGrid.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
+  liveGrid.style.gridTemplateRows = `repeat(${rows}, var(--cell))`;
   liveGrid.innerHTML='';
   for(let y=minY;y<=maxY;y++){
     for(let x=minX;x<=maxX;x++){
