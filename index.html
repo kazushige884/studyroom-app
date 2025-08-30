@@ -494,8 +494,8 @@
   </tr>
 </thead>
         <tbody id="bgmTbody">
-          <tr><td colspan="4" class="center muted">読み込み中…</td></tr>
-        </tbody>
+  <tr><td colspan="5" class="center muted">読み込み中…</td></tr>
+</tbody>
       </table>
     </div>
     <div style="margin-top:8px">
@@ -1293,45 +1293,72 @@ function fmtSize(n){
 }
 function fmtDate(any){
   try{
-    const iso = any || '';
-    if(!iso) return '—';
-    const d = new Date(iso);
+    if(any==null || any==='') return '—';
+    // 数値: 秒/ミリ秒両対応
+    if(typeof any === 'number'){
+      const ms = any < 1e12 ? any * 1000 : any;
+      const d = new Date(ms);
+      if(isNaN(d)) return '—';
+      const p=n=>String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+    // 文字列: 数字のみなら parseInt、その他は Date に委譲
+    const s = String(any).trim();
+    if(/^\d+$/.test(s)){
+      const num = parseInt(s,10);
+      const ms = num < 1e12 ? num * 1000 : num;
+      const d = new Date(ms);
+      if(isNaN(d)) return '—';
+      const p=n=>String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+    const d = new Date(s);
     if(isNaN(d)) return '—';
     const p=n=>String(n).padStart(2,'0');
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }catch{ return '—'; }
 }
-function fmtDuration(sec){
-  const s = Number(sec);
-  if(!isFinite(s) || s<=0) return '—';
-  const h = Math.floor(s/3600);
-  const m = Math.floor((s%3600)/60);
-  const ss = Math.floor(s%60);
-  const z = n => String(n).padStart(2,'0');
-  return h>0 ? `${h}:${z(m)}:${z(ss)}` : `${m}:${z(ss)}`;
+
+function fmtDuration(v){
+  // 数値(秒) or "mm:ss"/"hh:mm:ss" 文字列に対応
+  if(v==null || v==='') return '—';
+  if(typeof v === 'number'){
+    const s = v;
+    if(!isFinite(s) || s<=0) return '—';
+    const h = Math.floor(s/3600);
+    const m = Math.floor((s%3600)/60);
+    const ss = Math.floor(s%60);
+    const z = n => String(n).padStart(2,'0');
+    return h>0 ? `${h}:${z(m)}:${z(ss)}` : `${m}:${z(ss)}`;
+  }else{
+    const s = String(v).trim();
+    if(/^\d+$/.test(s)){  // 純数字: 秒とみなす
+      return fmtDuration(parseInt(s,10));
+    }
+    if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)){ // "m:ss" or "h:mm:ss"
+      return s.length===4 ? `0:${s}` : s; // 念の為ゼロ詰め
+    }
+    return '—';
+  }
 }
 
 async function getPlayableUrlFromBgmApp(id){
   const ensureAbs = (u)=>{
     if(!u) return '';
-    // 相対パスならベースを前置
-    if(/^https?:\/\//i.test(u)) return u;
+    if(/^https?:\/\//i.test(u)) return u; // すでに絶対
     return `${BGM_API_BASE}${u.startsWith('/') ? '' : '/'}${u}`;
   };
-  // 優先: geturl -> (url or path)
   try{
+    // 推奨: geturl の戻り(JSON)から url もしくは path を採用
     const r = await fetch(`${BGM_API_BASE}/geturl?id=${encodeURIComponent(id)}`, { mode:'cors', credentials:'omit' });
     if(r.ok){
       const js = await r.json().catch(()=>null);
-      const u = js?.url || js?.path;
+      const u = (js && (js.url || js.path)) ? (js.url || js.path) : '';
       if(u) return ensureAbs(u);
     }
   }catch{}
-  // 次善: stream エンドポイント（あれば）
-  const fallbackStream = `${BGM_API_BASE}/stream?id=${encodeURIComponent(id)}`;
-  // 末尾: download エンドポイント
-  const fallbackDownload = `${BGM_API_BASE}/download?id=${encodeURIComponent(id)}`;
-  return fallbackStream || fallbackDownload;
+  // フォールバックは download（存在確度が最も高い）
+  return `${BGM_API_BASE}/download?id=${encodeURIComponent(id)}`;
 }
 
 let __bgmPicked = null; // {id,title,url}
@@ -1393,7 +1420,7 @@ async function loadBgmList(){
         <td class="right">${fmtDuration(it.durationSec)}</td>
         <td class="right">${fmtSize(it.size)}</td>
         <td class="center">
-          <button class="btn btn-preview" data-id="${encodeURIComponent(it.id||'')}" data-title="${escapeHtml(it.title || '')}">試聴</button>
+          <button class="btn btn-preview" data-id="${it.id||''}" data-title="${escapeHtml(it.title || '')}">試聴</button>
         </td>
       `;
       tr.addEventListener('dblclick', async ()=>{
@@ -1414,8 +1441,8 @@ document.addEventListener('click', async (ev)=>{
   const row = btn.closest('tr');
   const title = btn.dataset.title || row?.querySelector('.title')?.textContent || '';
   const id = btn.dataset.id || title;
-  if(!id) return;
-  await previewAndPick({ id, title });
+if(!id) return;
+await previewAndPick({ id: id, title });
 });
 
 async function previewAndPick(it){
