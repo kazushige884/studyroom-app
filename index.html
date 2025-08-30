@@ -513,6 +513,8 @@
 
 <script>
 /* ===== 固定：BGM管理アプリ Functions ベースURL ===== */
+const BGM_API_BASE = 'https://superlative-bienenstitch-e300de.netlify.app/.netlify/functions';
+/* ===== 固定：BGM管理アプリ Functions ベースURL ===== */
 const BGM_SITE   = 'https://superlative-bienenstitch-e300de.netlify.app';
 const BGM_FN_BASE = `${BGM_SITE}/.netlify/functions`;
 
@@ -1346,20 +1348,20 @@ function fmtDuration(v){
 async function getPlayableUrlFromBgmApp(id){
   const ensureAbs = (u)=>{
     if(!u) return '';
-    if(/^https?:\/\//i.test(u)) return u; // すでに絶対
-    return `${BGM_API_BASE}${u.startsWith('/') ? '' : '/'}${u}`;
+    if(/^https?:\/\//i.test(u)) return u;           // 既に絶対URL
+    if(u.startsWith('/')) return `${BGM_SITE}${u}`; // /audio/... はサイト直下を指す
+    return `${BGM_SITE}/${u}`;
   };
   try{
-    // 推奨: geturl の戻り(JSON)から url もしくは path を採用
-    const r = await fetch(`${BGM_API_BASE}/geturl?id=${encodeURIComponent(id)}`, { mode:'cors', credentials:'omit' });
+    const r = await fetch(`${BGM_FN_BASE}/geturl?id=${encodeURIComponent(id)}`, { mode:'cors', credentials:'omit' });
     if(r.ok){
       const js = await r.json().catch(()=>null);
       const u = (js && (js.url || js.path)) ? (js.url || js.path) : '';
       if(u) return ensureAbs(u);
     }
   }catch{}
-  // フォールバックは download（存在確度が最も高い）
-  return `${BGM_API_BASE}/download?id=${encodeURIComponent(id)}`;
+  // フォールバックは Functions の download → そこから最終URLへリダイレクトされる想定
+  return `${BGM_FN_BASE}/download?id=${encodeURIComponent(id)}`;
 }
 
 let __bgmPicked = null; // {id,title,url}
@@ -1389,7 +1391,7 @@ async function loadBgmList(){
   const tbody = $('bgmTbody');
   tbody.innerHTML = `<tr><td colspan="5" class="center muted">読み込み中…</td></tr>`;
   try{
-    const r = await fetch(`${BGM_API_BASE}/list`, { mode:'cors', credentials:'omit' });
+    const r = await fetch(`${BGM_FN_BASE}/list`, { mode:'cors', credentials:'omit' });
     const js = await r.json();
 
     if(!(js && (Array.isArray(js.items) || Array.isArray(js.data)))) {
