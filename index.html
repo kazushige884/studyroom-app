@@ -1251,28 +1251,63 @@ async function downscaleImageFile(file){
   return URL.createObjectURL(blob);
 }
 
-/* アイドル監視 */
-['mousemove','mousedown','touchstart','keydown','pointerdown'].forEach(ev=>{
-  window.addEventListener(ev, resetIdleTimer, {passive:true});
+/* アイドル監視（ユーザー操作でBGMを“解錠”しておく） */
+const __gestureEvents = ['pointerdown','touchstart','mousedown','keydown','mousemove'];
+__gestureEvents.forEach(ev=>{
+  window.addEventListener(ev, (e)=>{
+    primeBgmFromGesture();     // ← iOS向け：ここで一度だけ無音再生して解錠
+    resetIdleTimer();
+  }, {passive:true});
 });
+
 function resetIdleTimer(){
   if (ssTimer) clearTimeout(ssTimer);
   loadSsSettings();
   if (!ssEnabledFlag || ssFilesArr.length===0){ stopSlideShow(); return; }
   ssTimer = setTimeout(startSlideShow, ssIdleMs);
 }
+
+/* iOS対策：ユーザー操作中にBGMを一度だけ無音再生→停止して“解錠” */
+function primeBgmFromGesture(){
+  try{
+    if(!ssBgmUrl) return;
+    if(!ssAudio){
+      ssAudio = new Audio();
+      ssAudio.crossOrigin = 'anonymous';
+      ssAudio.loop = true;
+    }
+    if (ssAudio.__primed) return;
+
+    ssAudio.muted = true;
+    if (!ssAudio.src) ssAudio.src = ssBgmUrl;
+    ssAudio.play().then(()=>{
+      // すぐ停止＆元に戻す（“再生可能な状態”だけ獲得）
+      ssAudio.pause();
+      ssAudio.currentTime = 0;
+      ssAudio.muted = false;
+      ssAudio.__primed = true;
+    }).catch(()=>{ /* 失敗しても次の操作でまた試す */ });
+  }catch{}
+}
 function startSlideShow(){
   if (!ssEnabledFlag || ssFilesArr.length===0) return;
   ssRunning = true;
   ssIndex = 0; ssShowingA = true;
   ssOverlay.style.display='flex';
-  // BGM（ループ）
+  // BGM（ループ）— primed Audio を再利用して確実に鳴らす
   if (ssBgmUrl){
-    if (ssAudio){ try{ ssAudio.pause(); }catch{} }
-    ssAudio = new Audio(ssBgmUrl);
-    ssAudio.crossOrigin = 'anonymous';
-    ssAudio.loop = true;
-    ssAudio.play().catch(()=>{});
+    if (!ssAudio){
+      ssAudio = new Audio();
+      ssAudio.crossOrigin = 'anonymous';
+      ssAudio.loop = true;
+    }
+    // URL更新（テスト→本番切替直後でも確実に最新に）
+    if (ssAudio.src !== ssBgmUrl) ssAudio.src = ssBgmUrl;
+
+    try{ ssAudio.pause(); }catch{}
+    ssAudio.muted = false;
+    ssAudio.volume = 1;
+    ssAudio.play().catch(()=>{ /* 念のため握りつぶし（iOS挙動差）*/ });
   }
   showNext();
 }
