@@ -39,6 +39,7 @@
   #view-ss h1{margin:0 0 8px}
   #view-ss .card{background:#111;border:1px solid var(--border);border-radius:14px;padding:16px}
   #view-ss .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#view-ss .row.right{justify-content:flex-end}
   #view-ss label{min-width:12em}
   #view-ss input[type="number"]{width:120px}
   #view-ss input, #view-ss button{font-size:1.5em}
@@ -294,27 +295,29 @@
       </div>
     </div>
 
-    <div class="card">
+        <div class="card">
       <div class="file-row">
-  <label>写真・動画（複数可）</label>
-  <div>
-    <input id="ssFiles" type="file" accept="image/*,video/mp4,video/webm" multiple />
-    <button id="clearMedia" class="btn ghost push-right">選択を解除</button>
-  </div>
-</div>
-</div>
-      <<div class="file-row" style="margin-top:8px">
-  <label>BGM</label>
-  <div>
-    <button id="btnPickBgm" class="btn ghost">BGMを選ぶ</button>
-    <span class="note">選択中：</span>
-    <span id="bgmNow" class="note">（未選択）</span>
-    <button id="clearBgm" class="btn ghost push-right">選択を解除</button>
-  </div>
-</div>
+        <label>写真・動画（複数可）</label>
+        <div>
+          <input id="ssFiles" type="file" accept="image/*,video/mp4,video/webm" multiple />
+          <button id="clearMedia" class="btn ghost push-right">選択を解除</button>
+        </div>
+      </div>
     </div>
 
-    <div class="row">
+    <div class="card">
+      <div class="file-row">
+        <label>BGM</label>
+        <div>
+          <button id="btnPickBgm" class="btn ghost">BGMを選ぶ</button>
+          <span class="note">選択中：</span>
+          <span id="bgmNow" class="note">（未選択）</span>
+          <button id="clearBgm" class="btn ghost push-right">選択を解除</button>
+        </div>
+      </div>
+    </div>
+
+        <div class="row right">
       <button class="btn ghost" id="btnSsBack">戻る</button>
       <button class="btn primary" id="btnSsSave">保存</button>
       <button class="btn primary" id="btnSsTest">テスト</button>
@@ -587,8 +590,8 @@ $('btnMakeReport').addEventListener('click', generateReport);
 function loadHistory(){ try{ return JSON.parse(localStorage.getItem(KEY_HISTORY)||'[]'); }catch{return []} }
 function saveHistory(arr){ localStorage.setItem(KEY_HISTORY, JSON.stringify(arr)); }
 function fmt2(n){ return String(n).padStart(2,'0'); }
-function toDateStr(d){ return `${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}`; }
-function toDisp(d){ return `${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())} ${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`; }
+function toDateStr(d){ return ${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}; }
+function toDisp(d){ return ${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())} ${fmt2(d.getHours())}:${fmt2(d.getMinutes())}; }
 function generateReport(){
   const el = $('historyDate');
   const pick = el && el.value ? el.value : toDateStr(new Date());
@@ -597,8 +600,8 @@ function generateReport(){
   let lines = ['利用ID,入室時刻,退出時刻'];
   for(const r of hist){
     const inStr  = r.inAt ? toDisp(new Date(r.inAt)) : '';
-    const outStr = r.outAt ? `${toDisp(new Date(r.outAt))}${r.outMarked?'★':''}` : '';
-    lines.push([`"${r.uid||''}"`,`"${inStr}"`,`"${outStr}"`].join(','));
+    const outStr = r.outAt ? ${toDisp(new Date(r.outAt))}${r.outMarked?'★':''} : '';
+    lines.push(["${r.uid||''}","${inStr}","${outStr}"].join(','));
   }
   const csvBody = lines.join('\r\n');
 
@@ -607,15 +610,15 @@ function generateReport(){
   const blob = new Blob([bom + csvBody], {type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${pick.replaceAll('-','')}_利用履歴.csv`;
+  a.download = ${pick.replaceAll('-','')}_利用履歴.csv;
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
 
   // メール下書き（mailto）を開く（自動送信は不可）
-  const subject = encodeURIComponent(`利用履歴CSV ${pick}`);
+  const subject = encodeURIComponent(利用履歴CSV ${pick});
   const body    = encodeURIComponent(csvBody);
-  location.href = `mailto:k_hayashi@sozogakuen.co.jp?subject=${subject}&body=${body}`;
+  location.href = mailto:k_hayashi@sozogakuen.co.jp?subject=${subject}&body=${body};
 }
 
 /* ロック解除PW保存（メイン） */
@@ -673,8 +676,8 @@ $('saveBtn').addEventListener('click', ()=>{
   const data = { version:1, name:(localStorage.getItem(KEY_NAME)||'').trim(), size:{w:SIZE,h:SIZE}, cells:editor.grid };
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const a=document.createElement('a'); const base = (editor.nameEl.value||data.name||'layout').trim();
-  const now=new Date(), ts=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
-  a.download=`${base}_${ts}.json`; a.href=URL.createObjectURL(blob); a.click();
+  const now=new Date(), ts=${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')};
+  a.download=${base}_${ts}.json; a.href=URL.createObjectURL(blob); a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),0);
 });
 $('openBtn').addEventListener('click', ()=> $('fileOpen').click());
@@ -717,8 +720,8 @@ function renderRun(){
   if(!g){ liveGrid.innerHTML='<div style="opacity:.7">レイアウトが見つかりません（レイアウト作成で保存してください）</div>'; return; }
   const {minX,minY,maxX,maxY}=computeCroppedArea(g);
   const cols=maxX-minX+1, rows=maxY-minY+1;
-  liveGrid.style.gridTemplateColumns=`repeat(${cols}, var(--cell))`;
-  liveGrid.style.gridTemplateRows=`repeat(${rows}, var(--cell))`;
+  liveGrid.style.gridTemplateColumns=repeat(${cols}, var(--cell));
+  liveGrid.style.gridTemplateRows=repeat(${rows}, var(--cell));
   liveGrid.innerHTML='';
   for(let y=minY;y<=maxY;y++){
     for(let x=minX;x<=maxX;x++){
@@ -747,8 +750,8 @@ window.addEventListener('resize', ()=>{
 const dateEl=$('dateText'), timeEl=$('timeText');
 const pad2=n=>String(n).padStart(2,'0');
 function updateClock(){ const d=new Date(), wk=['日','月','火','水','木','金','土'][d.getDay()];
-  dateEl.textContent=`${d.getFullYear()}/${pad2(d.getMonth()+1)}/${pad2(d.getDate())}（${wk}）`;
-  timeEl.textContent=`${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
+  dateEl.textContent=${d.getFullYear()}/${pad2(d.getMonth()+1)}/${pad2(d.getDate())}（${wk}）;
+  timeEl.textContent=${pad2(d.getHours())}:${pad2(d.getMinutes())}; }
 updateClock(); setInterval(updateClock, 30000);
 
 /* ⑤→③ 戻る時はロック解除PW */
@@ -777,7 +780,7 @@ function openSeatOps(seatNo){
   const entry = seatState[seatNo];
   if (isBusyEntry(entry)) {
     const uid = (entry && entry.uid) ? entry.uid : '不明';
-    seatOpsUsage.textContent = `使用中（${uid}）`;
+    seatOpsUsage.textContent = 使用中（${uid}）;
   } else {
     seatOpsUsage.textContent = '';
   }
@@ -920,7 +923,7 @@ function openConfirmWithValue(v){
   }
 
   lastScannedValue = v;
-  confirmMsgEl.textContent = (scanMode==='enter') ? `${v}　利用を開始しますか？` : `${v}　利用を終了しますか？`;
+  confirmMsgEl.textContent = (scanMode==='enter') ? ${v}　利用を開始しますか？ : ${v}　利用を終了しますか？;
   confirmDlg.style.display='flex';
 }
 
@@ -944,7 +947,7 @@ $('assignOk').addEventListener('click', ()=>{
   gotoRun();
 });
 function openAssignWithSeat(seatNo){
-  assignMsg.textContent = `No.${seatNo} の座席を利用してください。`;
+  assignMsg.textContent = No.${seatNo} の座席を利用してください。;
   assignDlg.style.display='flex';
 }
 
@@ -1293,8 +1296,8 @@ function placeAndKenBurns(img){
   img.style.transformOrigin='center center';
   img.style.transform='translate(-50%,-50%) scale(1)';
   img.animate([
-    { transform:`translate(-50%,-50%) scale(${startScale}) translate(0px,0px)` },
-    { transform:`translate(-50%,-50%) scale(${endScale}) translate(${dx}px,${dy}px)` }
+    { transform:translate(-50%,-50%) scale(${startScale}) translate(0px,0px) },
+    { transform:translate(-50%,-50%) scale(${endScale}) translate(${dx}px,${dy}px) }
   ], { duration: Math.max(3000, (window.__ssDurationSec||10)*1000), easing:'ease-in-out', fill:'forwards' });
 }
 
@@ -1315,20 +1318,20 @@ function fmtDate(iso){
     if(!iso) return '—';
     const d=new Date(iso); if(isNaN(d)) return '—';
     const p=n=>String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())};
   }catch{ return '—'; }
 }
 
 async function getPlayableUrlFromBgmApp(id){
   // まず geturl（署名付きURLがあればそれを使用）、ダメなら download
   try{
-    const r = await fetch(`${BGM_API_BASE}/geturl?id=${encodeURIComponent(id)}`, { mode:'cors', credentials:'omit' });
+    const r = await fetch(${BGM_API_BASE}/geturl?id=${encodeURIComponent(id)}, { mode:'cors', credentials:'omit' });
     if(r.ok){
       const js = await r.json().catch(()=>null);
       if(js && js.ok && js.url) return js.url;
     }
   }catch{}
-  return `${BGM_API_BASE}/download?id=${encodeURIComponent(id)}`;
+  return ${BGM_API_BASE}/download?id=${encodeURIComponent(id)};
 }
 
 let __bgmPicked = null; // {id,title,url}
@@ -1356,27 +1359,27 @@ $('bgmReload').addEventListener('click', loadBgmList);
 
 async function loadBgmList(){
   const tbody = $('bgmTbody');
-  tbody.innerHTML = `<tr><td colspan="4" class="center muted">読み込み中…</td></tr>`;
+  tbody.innerHTML = <tr><td colspan="4" class="center muted">読み込み中…</td></tr>;
   try{
-    const r = await fetch(`${BGM_API_BASE}/list`, { mode:'cors', credentials:'omit' });
+    const r = await fetch(${BGM_API_BASE}/list, { mode:'cors', credentials:'omit' });
     const js = await r.json();
     if(!(js && js.ok && Array.isArray(js.items))) throw new Error('一覧が取得できません');
     if(js.items.length===0){
-      tbody.innerHTML = `<tr><td colspan="4" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>`;
+      tbody.innerHTML = <tr><td colspan="4" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>;
       return;
     }
     const frag = document.createDocumentFragment();
     js.items.forEach(it=>{
       const tr = document.createElement('tr');
       tr.className = 'pick-row';
-      tr.innerHTML = `
+      tr.innerHTML = 
         <td class="title">${escapeHtml(it.title || it.key || it.id || '')}</td>
         <td>${fmtDate(it.date)}</td>
         <td class="right">${fmtSize(it.size)}</td>
         <td class="center">
           <button class="btn btn-preview" data-id="${it.id}" data-title="${escapeHtml(it.title || '')}">試聴</button>
         </td>
-      `;
+      ;
       tr.addEventListener('dblclick', async ()=>{
         await previewAndPick(it);
       });
@@ -1385,7 +1388,7 @@ async function loadBgmList(){
     tbody.innerHTML='';
     tbody.appendChild(frag);
   }catch(err){
-    tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>`;
+    tbody.innerHTML = <tr><td colspan="4" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>;
   }
 }
 document.addEventListener('click', async (ev)=>{
@@ -1408,7 +1411,7 @@ async function previewAndPick(it){
     a.src = url + bust;
     await a.play().catch(()=>{});
     __bgmPicked = { id: it.id, title: it.title || '', url };
-    $('bgmPickMsg').textContent = `選択中：${it.title || '(タイトルなし)'}`;
+    $('bgmPickMsg').textContent = 選択中：${it.title || '(タイトルなし)'};
   }catch(e){
     $('bgmPickMsg').textContent = '再生に失敗しました';
   }
