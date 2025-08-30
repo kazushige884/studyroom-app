@@ -1225,8 +1225,36 @@ $('ssFiles').addEventListener('change', async (e)=>{
   localStorage.setItem(SS_MEDIA_KEY, JSON.stringify(ssFilesArr));
 });
 $('clearMedia').addEventListener('click', ()=>{
-  ssFilesArr = []; localStorage.setItem(SS_MEDIA_KEY,'[]');
-  $('ssFiles').value = '';
+  // 1) これまでに作った blob: URL を開放してメモリを解放
+  try{
+    // まず現在メモリ上の配列
+    (Array.isArray(ssFilesArr)? ssFilesArr : []).forEach(it=>{
+      if(it && typeof it.url === 'string' && it.url.startsWith('blob:')){
+        try{ URL.revokeObjectURL(it.url); }catch{}
+      }
+    });
+    // ついでに localStorage 側に残っているURL文字列も（同一セッションなら有効）
+    const prev = JSON.parse(localStorage.getItem(SS_MEDIA_KEY) || '[]');
+    (Array.isArray(prev)? prev : []).forEach(it=>{
+      if(it && typeof it.url === 'string' && it.url.startsWith('blob:')){
+        try{ URL.revokeObjectURL(it.url); }catch{}
+      }
+    });
+  }catch{}
+
+  // 2) 保存データを完全削除（上書きではなく removeItem で容量回復を確実に）
+  try{ localStorage.removeItem(SS_MEDIA_KEY); }catch{}
+
+  // 3) 状態クリア
+  ssFilesArr = [];
+  const fi = $('ssFiles');
+  if (fi) fi.value = '';
+
+  // 4) スライドショーのアイドル監視をリセット（誤起動防止）
+  if (typeof resetIdleTimer === 'function') resetIdleTimer();
+
+  // 5) 完了通知
+  alert('選択したメディアを解除し、保存データも削除しました。空き容量が回復します。');
 });
 
 /* BGM 選択 */
