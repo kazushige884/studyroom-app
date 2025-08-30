@@ -513,7 +513,7 @@
 
 <script>
 /* ===== 固定：BGM管理アプリ Functions ベースURL ===== */
-const BGM_API_BASE = 'https://superlative-bienenstitch-e300de.netlify.app/.netlify/functions';
+const BGM_API_BASE = 'https://superlative-bienenstitch-e300de.netlify.app';
 
 /* ===== 共通キー・ユーティリティ ===== */
 const KEY_LAYOUT='studyroom-layout-v7', KEY_NAME='studyroom-name-v7', KEY_UNLOCK='unlock-pw';
@@ -1396,41 +1396,65 @@ async function loadBgmList(){
     }
     const raw = js.items || js.data || [];
 
-    // 返却フィールドのゆらぎを吸収
+    // ゆらぎ吸収：最低限 id と title があればOK
     const items = raw.map(it => ({
-      id: it.id || it.key || it.uuid || it.name,               // 一意なキー
-      title: it.title || it.name || it.filename || it.key || '',
-      date: it.date || it.updatedAt || it.updated_at || it.mtime || it.lastModified,
-      size: it.size || it.bytes || it.length,
+      id: it.id || it.key || it.uuid || it.name || it.title || it.filename,
+      title: it.title || it.name || it.filename || it.key || '(untitled)',
+      // 以下は存在すれば使う。無ければ後段で補完する
+      date: it.date || it.updatedAt || it.updated_at || it.mtime || it.lastModified || null,
+      size: it.size || it.bytes || it.length || it.contentLength || null,
       durationSec: it.durationSec || it.duration || (it.meta && (it.meta.durationSec || it.meta.duration)) || null
-    }));
+    })).filter(it => !!it.id);
 
     if(items.length===0){
       tbody.innerHTML = `<tr><td colspan="5" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>`;
       return;
     }
 
+    // 表描画（まずは「—」でプレースホルダ表示）
     const frag = document.createDocumentFragment();
     items.forEach(it=>{
       const tr = document.createElement('tr');
       tr.className = 'pick-row';
       tr.innerHTML = `
         <td class="title">${escapeHtml(it.title)}</td>
-        <td>${fmtDate(it.date)}</td>
-        <td class="right">${fmtDuration(it.durationSec)}</td>
-        <td class="right">${fmtSize(it.size)}</td>
+        <td class="cell-date">—</td>
+        <td class="right cell-dur">—</td>
+        <td class="right cell-size">—</td>
         <td class="center">
-          <button class="btn btn-preview" data-id="${it.id||''}" data-title="${escapeHtml(it.title || '')}">試聴</button>
+          <button class="btn btn-preview" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}">試聴</button>
         </td>
       `;
+      // 先にサーバが出しているフィールドがあれば反映
+      if (it.date)  tr.querySelector('.cell-date').textContent = fmtDate(it.date);
+      if (it.size)  tr.querySelector('.cell-size').textContent = fmtSize(it.size);
+      if (it.durationSec) tr.querySelector('.cell-dur').textContent = fmtDuration(it.durationSec);
+
       tr.addEventListener('dblclick', async ()=>{
         await previewAndPick({ id: it.id, title: it.title });
       });
+
+      // 後でHEAD＋metadataで補完
+      tr.dataset.id = it.id;
+      tr.dataset.title = it.title;
       frag.appendChild(tr);
     });
 
     tbody.innerHTML='';
     tbody.appendChild(frag);
+
+    // ---- ここで各行のメタ情報を補完する（HEADと<audio>で） ----
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    for (const row of rows){
+      const id = row.dataset.id;
+      try{
+        const url = await getPlayableUrlFromBgmApp(id);
+        await fillBgmMeta(row, url);  // 日付・サイズ・duration を埋める
+      }catch(e){
+        // 失敗しても UI はそのまま（"—"表示）
+      }
+    }
+
   }catch(err){
     tbody.innerHTML = `<tr><td colspan="5" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>`;
   }
@@ -1441,9 +1465,44 @@ document.addEventListener('click', async (ev)=>{
   const row = btn.closest('tr');
   const title = btn.dataset.title || row?.querySelector('.title')?.textContent || '';
   const id = btn.dataset.id || title;
-if(!id) return;
-await previewAndPick({ id: id, title });
+  if(!id) return;
+  await previewAndPick({ id: id, title });
 });
+
+// 追加: HEAD と <audio> metadata で DATE / SIZE / DURATION を補完
+async function fillBgmMeta(row, baseUrl){
+  const withBust = baseUrl + ((baseUrl.includes('?')?'&':'?')+'v='+Date.now());
+
+  // 1) HEADで Content-Length / Last-Modified
+  try{
+    const hr = await fetch(withBust, { method:'HEAD' });
+    const len = hr.headers.get('content-length');
+    const lm  = hr.headers.get('last-modified');
+
+    if(len) row.querySelector('.cell-size').textContent = fmtSize(parseInt(len,10));
+    if(lm)  row.querySelector('.cell-date').textContent = fmtDate(lm);
+  }catch{ /* 無視 */ }
+
+  // 2) <audio> の loadedmetadata で duration
+  try{
+    const a = new Audio();
+    a.crossOrigin = 'anonymous';
+    a.preload = 'metadata';
+    a.src = withBust;
+    await new Promise((res, rej)=>{
+      const tid = setTimeout(()=>rej(new Error('metadata timeout')), 6000);
+      a.addEventListener('loadedmetadata', ()=>{ clearTimeout(tid); res(); }, { once:true });
+      a.addEventListener('error', ()=>{ clearTimeout(tid); rej(new Error('metadata error')); }, { once:true });
+    });
+    if (isFinite(a.duration) && a.duration > 0){
+      row.querySelector('.cell-dur').textContent = fmtDuration(Math.round(a.duration));
+    }
+    // 後片付け
+    try{ a.pause(); }catch{}
+    a.removeAttribute('src');
+    a.load();
+  }catch{ /* 無視 */ }
+}
 
 async function previewAndPick(it){
   const msg = $('bgmPickMsg');
