@@ -566,7 +566,8 @@ $('btnGoLayout').addEventListener('click', gotoLayout);
 $('btnGoSs').addEventListener('click', gotoSs);
 
 /* ===== 履歴CSV ＆ メール下書き ===== */
-$('btnMakeReport').addEventListener('click', generateReport);
+const btnReport = $('btnMakeReport');
+if (btnReport) btnReport.addEventListener('click', generateReport);
 function loadHistory(){ try{ return JSON.parse(localStorage.getItem(KEY_HISTORY)||'[]'); }catch{return []} }
 function saveHistory(arr){ localStorage.setItem(KEY_HISTORY, JSON.stringify(arr)); }
 function generateReport(){
