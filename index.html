@@ -732,12 +732,8 @@ function computeCroppedArea(g){
     }
   }
   if (maxX<0) return { minX:0, minY:0, maxX:SIZE-1, maxY:SIZE-1 };
-  return {
-    minX: Math.max(0, minX - 1),
-    minY: Math.max(0, minY - 1),
-    maxX: Math.min(SIZE - 1, maxX + 1),
-    maxY: Math.min(SIZE - 1, maxY + 1),
-  };
+  // ← マージン（±1）を外して、そのままの範囲だけを返す
+  return { minX, minY, maxX, maxY };
 }
 function isBusyEntry(e){ return !!(e && (e===true || e.busy)); }
 function clsRun(t, seatNo){ if(t===0)return'live-wall'; if(t===1)return'live-hall'; if(t===3)return'live-door'; const busy = isBusyEntry(seatState[seatNo]); return busy?'live-seat-busy':'live-seat-empty'; }
