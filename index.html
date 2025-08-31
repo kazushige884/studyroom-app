@@ -826,15 +826,39 @@ opsCancel.addEventListener('click', closeSeatOps);
 opsOk.addEventListener('click', ()=>{
   opsWarn.style.display='none';
   if(!checkUnlock(unlockPwOps.value)){ opsWarn.style.display='block'; return; }
-  const to=(moveToSeat.value||'').trim();
-  if(seatOpsTarget && to){
-    const prev = seatState[seatOpsTarget];
-    const uid = (prev && prev.uid) ? prev.uid : undefined;
-    seatState[seatOpsTarget]=false;
-    seatState[to]= uid ? {busy:true, uid, inAt: prev?.inAt||undefined} : true;
+
+  const to = (moveToSeat.value||'').trim();
+  const from = seatOpsTarget ? String(seatOpsTarget) : '';
+  if (from && to){
+    const prev = seatState[from];
+    const uid = (prev && prev.uid) ? String(prev.uid) : '';
+
+    // 状態更新
+    seatState[from] = false;
+    seatState[to] = uid
+      ? { busy:true, uid, inAt: prev?.inAt || undefined }
+      : true;
     saveSeatState();
+
+    // ★ ログ（列は既存のまま）
+    //   action: "move"
+    //   seatNo: "from->to" （例: "12->27"）
+    //   uid   : 可能なら利用ID、なければ空文字
+    //   method: "admin"（座席操作ダイアログ由来）
+    //   roomPrefix: uid 先頭3文字（空なら空）
+    pushLog({
+      uid,
+      action: 'move',
+      seatNo: `${from}->${to}`,
+      method: 'admin',
+      roomPrefix: uid ? String(uid).slice(0,3) : '',
+      star: false
+    });
   }
-  closeSeatOps(); renderRun(); setTimeout(forceRunFit, 16);
+
+  closeSeatOps();
+  renderRun();
+  setTimeout(forceRunFit, 16);
 });
 btnDoLeave.addEventListener('click', ()=>{
   opsWarn.style.display='none';
