@@ -491,6 +491,7 @@
       <table>
         <thead>
   <tr>
+    <th style="width:60px" class="center">選択</th>
     <th>Title</th>
     <th style="width:120px" class="right">DURATION</th>
     <th style="width:120px" class="center">操作</th>
@@ -1177,9 +1178,10 @@ let ssPickedFiles = [];
 let __currentObjectUrl = null;
 let ssEnabledFlag = false;
 let ssFilesArr = []; // {type:'image'|'video', url:objectURL}
-let ssBgmUrl = '';
-let ssBgmTitle = '';
+// 複数曲対応：選択された曲の配列 [{id,title,url}]
+let ssBgmList = [];
 let ssAudio = null;
+let __bgmIndex = -1; // 直前に再生したインデックス（連続同一回避用）
 const ssOverlay = $('ssOverlay'), ssLayerA=$('ssLayerA'), ssLayerB=$('ssLayerB');
 let ssIndex=0, ssShowingA=true, ssRunning=false;
 
@@ -1189,8 +1191,7 @@ function loadSsSettings(){
     ssEnabledFlag = !!s.enabled;
     ssIdleMs = Math.max(1000, (s.idleMin||10)*60000);
     window.__ssDurationSec = Math.max(3, s.durationSec||10);
-    ssBgmUrl = s.bgmUrl||'';
-    ssBgmTitle = s.bgmTitle||'';
+    ssBgmList = Array.isArray(s.bgmList) ? s.bgmList : [];
     const media = JSON.parse(localStorage.getItem(SS_MEDIA_KEY)||'[]');
     ssFilesArr = media;
   }catch{
@@ -1201,12 +1202,11 @@ function saveSsSettingsUI(){
   // 入力値を即時にグローバルへ反映し、テスト開始直後のズレを解消
   const dur = Math.max(3, Number($('ssDuration').value || 10)); // 入力min=3と整合
   const s = {
-    enabled: $('ssEnabled').checked,
-    idleMin: Number($('ssIdleMin').value || 10),
-    durationSec: dur,
-    bgmUrl: ssBgmUrl || '',
-    bgmTitle: ssBgmTitle || '',
-  };
+  enabled: $('ssEnabled').checked,
+  idleMin: Number($('ssIdleMin').value || 10),
+  durationSec: dur,
+  bgmList: Array.isArray(ssBgmList) ? ssBgmList : [],
+};
   localStorage.setItem(SS_KEY, JSON.stringify(s));
   window.__ssDurationSec = dur; // ← ここがポイント：すぐに startSlideShow が新秒数を使う
   updateBgmNow();
@@ -1220,7 +1220,13 @@ function loadSsSettingsUI(){
 }
 function updateBgmNow(){
   const el=$('bgmNow');
-  el.textContent = ssBgmUrl ? (ssBgmTitle || '(タイトルなし)') : '（未選択）';
+  if (!ssBgmList || ssBgmList.length===0) {
+    el.textContent = '（未選択）';
+  } else if (ssBgmList.length===1) {
+    el.textContent = ssBgmList[0].title || '(タイトルなし)';
+  } else {
+    el.textContent = `${ssBgmList.length}曲選択中`;
+  }
 }
 $('btnSsBack').addEventListener('click', gotoMain);
 $('btnSsSave').addEventListener('click', ()=>{
@@ -1304,8 +1310,9 @@ $('clearMedia').addEventListener('click', ()=>{
 /* BGM 選択 */
 $('btnPickBgm').addEventListener('click', openBgmPicker);
 $('clearBgm').addEventListener('click', ()=>{
-  ssBgmUrl=''; ssBgmTitle='';
+  ssBgmList = [];
   saveSsSettingsUI();
+  updateBgmNow();
 });
 
 /* 画像ダウンスケール */
@@ -1342,7 +1349,7 @@ function resetIdleTimer(){
 /* iOS対策：ユーザー操作中にBGMを一度だけ無音再生→停止して“解錠” */
 function primeBgmFromGesture(){
   try{
-    if(!ssBgmUrl) return;
+    if(!ssBgmList || ssBgmList.length===0) return;
     if(!ssAudio){
       ssAudio = new Audio();
       ssAudio.crossOrigin = 'anonymous';
@@ -1351,7 +1358,7 @@ function primeBgmFromGesture(){
     if (ssAudio.__primed) return;
 
     ssAudio.muted = true;
-    if (!ssAudio.src) ssAudio.src = ssBgmUrl;
+    if (!ssAudio.src) ssAudio.src = ssBgmList[0].url; // 適当に先頭曲を使って“解錠”
     ssAudio.play().then(()=>{
       // すぐ停止＆元に戻す（“再生可能な状態”だけ獲得）
       ssAudio.pause();
@@ -1366,22 +1373,39 @@ function startSlideShow(){
   ssRunning = true;
   ssIndex = 0; ssShowingA = true;
   ssOverlay.style.display='flex';
-  // BGM（ループ）— primed Audio を再利用して確実に鳴らす
-  if (ssBgmUrl){
-    if (!ssAudio){
-      ssAudio = new Audio();
-      ssAudio.crossOrigin = 'anonymous';
-      ssAudio.loop = true;
-    }
-    // URL更新（テスト→本番切替直後でも確実に最新に）
-    if (ssAudio.src !== ssBgmUrl) ssAudio.src = ssBgmUrl;
-
-    try{ ssAudio.pause(); }catch{}
-    ssAudio.muted = false;
-    ssAudio.volume = 1;
-    ssAudio.play().catch(()=>{ /* 念のため握りつぶし（iOS挙動差）*/ });
+  // BGM（複数曲：ランダム連続再生）
+if (ssBgmList && ssBgmList.length > 0) {
+  if (!ssAudio){
+    ssAudio = new Audio();
+    ssAudio.crossOrigin = 'anonymous';
+    ssAudio.loop = false; // 曲ごとに切替
+    ssAudio.addEventListener('ended', ()=>{ playRandomBgm(); });
   }
+  try{ ssAudio.pause(); }catch{}
+  ssAudio.muted = false;
+  ssAudio.volume = 1;
+  playRandomBgm(); // 最初の1曲を流す
+}
   showNext();
+}
+function playRandomBgm(){
+  if (!ssBgmList || ssBgmList.length===0 || !ssAudio) return;
+  // 直前と同じ曲にならないようにする（1曲しかない場合はそのまま）
+  let idx;
+  if (ssBgmList.length === 1) {
+    idx = 0;
+  } else {
+    do {
+      idx = Math.floor(Math.random() * ssBgmList.length);
+    } while (idx === __bgmIndex);
+  }
+  __bgmIndex = idx;
+  const sel = ssBgmList[idx];
+  if (!sel || !sel.url) return;
+  try{ ssAudio.pause(); }catch{}
+  ssAudio.src = sel.url;
+  ssAudio.currentTime = 0;
+  ssAudio.play().catch(()=>{ /* iOS挙動差で失敗しても次に再試行 */ });
 }
 function stopSlideShow(){
   if (!ssRunning) return;
@@ -1563,20 +1587,40 @@ function closeBgmPicker(){
 }
 
 $('bgmCancel').addEventListener('click', closeBgmPicker);
-$('bgmOk').addEventListener('click', ()=>{
-  if(!__bgmPicked){ alert('BGMを選択してください。'); return; }
-  ssBgmUrl = __bgmPicked.url;
-  ssBgmTitle = __bgmPicked.title || '';
+$('bgmOk').addEventListener('click', async ()=>{
+  const tbody = $('bgmTbody');
+  const picks = Array.from(tbody.querySelectorAll('input.pick:checked'));
+  if (picks.length === 0) {
+    ssBgmList = [];
+    saveSsSettingsUI();
+    closeBgmPicker();
+    updateBgmNow();
+    alert('BGMの選択を解除しました');
+    return;
+  }
+
+  // id → url を解決して配列化
+  const list = [];
+  for (const cb of picks) {
+    const id = cb.dataset.id;
+    const title = cb.dataset.title || '';
+    try{
+      const url = await getPlayableUrlFromBgmApp(id);
+      if (url) list.push({ id, title, url });
+    }catch{}
+  }
+  ssBgmList = list;
   saveSsSettingsUI();
   closeBgmPicker();
-  alert('BGMを設定しました');
+  updateBgmNow();
+  alert(`${ssBgmList.length}曲を設定しました`);
 });
 
 $('bgmReload').addEventListener('click', loadBgmList);
 
 async function loadBgmList(){
   const tbody = $('bgmTbody');
-  tbody.innerHTML = `<tr><td colspan="5" class="center muted">読み込み中…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="4" class="center muted">読み込み中…</td></tr>`;
   try{
     const r = await fetch(`${BGM_FN_BASE}/list`, { mode:'cors', credentials:'omit' });
     const js = await r.json();
@@ -1604,6 +1648,9 @@ async function loadBgmList(){
       const tr = document.createElement('tr');
       tr.className = 'pick-row';
       tr.innerHTML = `
+  <td class="center">
+    <input type="checkbox" class="pick" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}" />
+  </td>
   <td class="title">${escapeHtml(it.title)}</td>
   <td class="right cell-dur">—</td>
   <td class="center">
