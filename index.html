@@ -1185,6 +1185,9 @@ let __bgmIndex = -1; // 直前に再生したインデックス（連続同一�
 const ssOverlay = $('ssOverlay'), ssLayerA=$('ssLayerA'), ssLayerB=$('ssLayerB');
 let ssIndex=0, ssShowingA=true, ssRunning=false;
 
+// 追加：現在選択されているメディア数を返す（iPad一時再生対応）
+function mediaCount(){ return ssTransientMode ? ssPickedFiles.length : ssFilesArr.length; }
+
 function loadSsSettings(){
   try{
     const s = JSON.parse(localStorage.getItem(SS_KEY)||'{}');
@@ -1281,6 +1284,8 @@ $('ssFiles').addEventListener('change', async (e)=>{
   }
 });
 $('clearMedia').addEventListener('click', ()=>{
+  // 実行中ならまず停止してレイヤも隠す
+  stopSlideShow();
   // 再生中URLを解放
   try{
     if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
@@ -1349,7 +1354,7 @@ __gestureEvents.forEach(ev=>{
 function resetIdleTimer(){
   if (ssTimer) clearTimeout(ssTimer);
   loadSsSettings();
-  if (!ssEnabledFlag || ssFilesArr.length===0){ stopSlideShow(); return; }
+  if (!ssEnabledFlag || mediaCount()===0){ stopSlideShow(); return; }
   ssTimer = setTimeout(startSlideShow, ssIdleMs);
 }
 
@@ -1448,7 +1453,11 @@ function stopSlideShow(){
 ssOverlay.addEventListener('click', ()=>{ stopSlideShow(); resetIdleTimer(); });
 function showNext(){
   if (!ssRunning) return;
-  const item = ssFilesArr[ssIndex % ssFilesArr.length];
+  const len = mediaCount();
+  if (len===0){ stopSlideShow(); return; }
+  const idx = ssIndex % len;
+  // transient時は実ファイル配列からtypeを取る（ssFilesArrは型だけのダミーを持つため）
+  const item = ssTransientMode ? { type: (ssPickedFiles[idx]?.type || '') } : ssFilesArr[idx];
   const dur = Math.max(3, window.__ssDurationSec||10);
   const layer = ssShowingA ? ssLayerB : ssLayerA; // 次に出すレイヤ
   layer.innerHTML='';
@@ -1471,7 +1480,7 @@ const makeUrlForIndex = (idx)=>{
   }
 };
 
-if (item.type==='image'){
+if ((item.type||'').startsWith('image')){
   const url = makeUrlForIndex(ssIndex);
   if (!url){ ssIndex++; return showNext(); }
   __currentObjectUrl = url;
