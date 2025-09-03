@@ -1377,9 +1377,24 @@ function primeBgmFromGesture(){
 }
 function startSlideShow(force=false){
   if (!force && (!ssEnabledFlag || ssFilesArr.length===0)) return;
+
+  // ★ 前回の残りを完全クリア
+  try{
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(__currentObjectUrl);
+    }
+  }catch{}
+  __currentObjectUrl = null;
+  ssLayerA.innerHTML = '';
+  ssLayerB.innerHTML = '';
+  ssLayerA.classList.remove('show');
+  ssLayerB.classList.remove('show');
+
   ssRunning = true;
-  ssIndex = 0; ssShowingA = true;
+  ssIndex = 0;
+  ssShowingA = true;
   ssOverlay.style.display='flex';
+
   // BGM（複数曲：ランダム連続再生）
   if (ssBgmList && ssBgmList.length > 0) {
     if (!ssAudio){
