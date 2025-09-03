@@ -498,7 +498,7 @@
   </tr>
 </thead>
         <tbody id="bgmTbody">
-  <tr><td colspan="3" class="center muted">読み込み中…</td></tr>
+  <tr><td colspan="4" class="center muted">読み込み中…</td></tr>
 </tbody>
       </table>
     </div>
@@ -1202,13 +1202,16 @@ function saveSsSettingsUI(){
   // 入力値を即時にグローバルへ反映し、テスト開始直後のズレを解消
   const dur = Math.max(3, Number($('ssDuration').value || 10)); // 入力min=3と整合
   const s = {
-  enabled: $('ssEnabled').checked,
-  idleMin: Number($('ssIdleMin').value || 10),
-  durationSec: dur,
-  bgmList: Array.isArray(ssBgmList) ? ssBgmList : [],
-};
+    enabled: $('ssEnabled').checked,
+    idleMin: Number($('ssIdleMin').value || 10),
+    durationSec: dur,
+    bgmList: Array.isArray(ssBgmList) ? ssBgmList : [],
+  };
   localStorage.setItem(SS_KEY, JSON.stringify(s));
   window.__ssDurationSec = dur; // ← ここがポイント：すぐに startSlideShow が新秒数を使う
+  // 追加：グローバルの即時反映
+  ssEnabledFlag = s.enabled;
+  ssIdleMs = Math.max(1000, s.idleMin * 60000);
   updateBgmNow();
 }
 function loadSsSettingsUI(){
@@ -1235,8 +1238,12 @@ $('btnSsSave').addEventListener('click', ()=>{
   resetIdleTimer();
 });
 $('btnSsTest').addEventListener('click', ()=>{
-  saveSsSettingsUI();
-  startSlideShow();
+  saveSsSettingsUI(); // ↑で ssEnabledFlag / ssIdleMs も即時反映
+  if (ssFilesArr.length === 0 && ssPickedFiles.length === 0){
+    alert('写真・動画が選択されていません');
+    return;
+  }
+  startSlideShow(true); // 強制起動
 });
 
 /* メディア選択 */
@@ -1368,24 +1375,24 @@ function primeBgmFromGesture(){
     }).catch(()=>{ /* 失敗しても次の操作でまた試す */ });
   }catch{}
 }
-function startSlideShow(){
-  if (!ssEnabledFlag || ssFilesArr.length===0) return;
+function startSlideShow(force=false){
+  if (!force && (!ssEnabledFlag || ssFilesArr.length===0)) return;
   ssRunning = true;
   ssIndex = 0; ssShowingA = true;
   ssOverlay.style.display='flex';
   // BGM（複数曲：ランダム連続再生）
-if (ssBgmList && ssBgmList.length > 0) {
-  if (!ssAudio){
-    ssAudio = new Audio();
-    ssAudio.crossOrigin = 'anonymous';
-    ssAudio.loop = false; // 曲ごとに切替
-    ssAudio.addEventListener('ended', ()=>{ playRandomBgm(); });
+  if (ssBgmList && ssBgmList.length > 0) {
+    if (!ssAudio){
+      ssAudio = new Audio();
+      ssAudio.crossOrigin = 'anonymous';
+      ssAudio.loop = false; // 曲ごとに切替
+      ssAudio.addEventListener('ended', ()=>{ playRandomBgm(); });
+    }
+    try{ ssAudio.pause(); }catch{}
+    ssAudio.muted = false;
+    ssAudio.volume = 1;
+    playRandomBgm(); // 最初の1曲を流す
   }
-  try{ ssAudio.pause(); }catch{}
-  ssAudio.muted = false;
-  ssAudio.volume = 1;
-  playRandomBgm(); // 最初の1曲を流す
-}
   showNext();
 }
 function playRandomBgm(){
