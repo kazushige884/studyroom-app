@@ -1566,7 +1566,6 @@ function fmtDate(any){
 }
 
 function fmtDuration(v){
-  // 数値(秒) or "mm:ss"/"hh:mm:ss" 文字列に対応
   if(v==null || v==='') return '—';
   if(typeof v === 'number'){
     const s = v;
@@ -1578,11 +1577,11 @@ function fmtDuration(v){
     return h>0 ? `${h}:${z(m)}:${z(ss)}` : `${m}:${z(ss)}`;
   }else{
     const s = String(v).trim();
-    if(/^\d+$/.test(s)){  // 純数字: 秒とみなす
+    if(/^\d+$/.test(s)){
       return fmtDuration(parseInt(s,10));
     }
-    if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)){ // "m:ss" or "h:mm:ss"
-      return s.length===4 ? `0:${s}` : s; // 念の為ゼロ詰め
+    if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)){
+      return s.length===4 ? `0:${s}` : s;
     }
     return '—';
   }
