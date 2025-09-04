@@ -1189,6 +1189,7 @@ const ssOverlay = $('ssOverlay'), ssLayerA=$('ssLayerA'), ssLayerB=$('ssLayerB')
 let ssIndex=0, ssShowingA=true, ssRunning=false;
 let ssOrder = [];      // 再生順インデックス配列（ランダム）
 let ssFirstFrame = true; // 初回フレームは画像ロード完了を待ってからフェード
+let ssNextTid = null;  // 次コマ予約タイマー（停止/再実行時に確実にクリア）
 
 // 追加：現在選択されているメディア数を返す（iPad一時再生対応）
 function mediaCount(){ return ssTransientMode ? ssPickedFiles.length : ssFilesArr.length; }
@@ -1402,13 +1403,15 @@ function primeBgmFromGesture(){
 function startSlideShow(force=false){
   if (!force && (!ssEnabledFlag || mediaCount()===0)) return;
 
-  // ★ 前回の残りを完全クリア
+  // 残タスクを完全クリア
+  if (ssNextTid){ clearTimeout(ssNextTid); ssNextTid = null; }
   try{
-    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')){
       URL.revokeObjectURL(__currentObjectUrl);
     }
   }catch{}
   __currentObjectUrl = null;
+
   ssLayerA.innerHTML = '';
   ssLayerB.innerHTML = '';
   ssLayerA.classList.remove('show');
@@ -1418,9 +1421,9 @@ function startSlideShow(force=false){
   const len = mediaCount();
   ssOrder = buildRandomOrder(len);
 
-  ssRunning = true;
-  ssIndex = 0;
-  ssShowingA = true;
+  ssRunning    = true;
+  ssIndex      = 0;
+  ssShowingA   = true;
   ssFirstFrame = true;
 
   // BGM（複数曲：ランダム連続再生）
@@ -1434,10 +1437,10 @@ function startSlideShow(force=false){
     try{ ssAudio.pause(); }catch{}
     ssAudio.muted = false;
     ssAudio.volume = 1;
-    playRandomBgm(); // 最初の1曲を流す
+    playRandomBgm();
   }
 
-  // ← 初回は「ロード完了を待ってから」オーバーレイ表示＆フェード
+  // 初回はロード完了後にオーバーレイ表示＆フェード
   showNext(true);
 }
 function playRandomBgm(){
@@ -1460,14 +1463,18 @@ function playRandomBgm(){
   ssAudio.play().catch(()=>{ /* iOS挙動差で失敗しても次に再試行 */ });
 }
 function stopSlideShow(){
+  // 予約済みの次コマタイマーを必ず解除
+  if (ssNextTid){ clearTimeout(ssNextTid); ssNextTid = null; }
+
   if (!ssRunning) return;
-  ssRunning=false;
-  ssOverlay.style.display='none';
-  ssLayerA.innerHTML=''; ssLayerB.innerHTML='';
+  ssRunning = false;
+  ssOverlay.style.display = 'none';
+  ssLayerA.innerHTML = '';
+  ssLayerB.innerHTML = '';
 
   // 再生中のURLを解放
   try{
-    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')){
       URL.revokeObjectURL(__currentObjectUrl);
     }
   }catch{}
@@ -1535,7 +1542,13 @@ function showNext(first=false){
       if (prevUrl && prevUrl.startsWith('blob:')) {
         try{ URL.revokeObjectURL(prevUrl); }catch{}
       }
-      setTimeout(()=>{ ssIndex++; showNext(false); }, dur*1000);
+      if (ssNextTid){ clearTimeout(ssNextTid); }
+ssNextTid = setTimeout(()=>{
+  ssNextTid = null;
+  if (!ssRunning) return;
+  ssIndex++;
+  showNext(false);
+}, dur*1000);
     }, { once:true });
 
     img.src = url;
@@ -1572,9 +1585,11 @@ function showNext(first=false){
     }, { once:true });
 
     vd.addEventListener('ended', ()=>{
-      ssIndex++;
-      showNext(false);
-    }, { once:true });
+  if (ssNextTid){ clearTimeout(ssNextTid); ssNextTid = null; }
+  if (!ssRunning) return;
+  ssIndex++;
+  showNext(false);
+}, { once:true });
   }
 }
 function crossfade(){
