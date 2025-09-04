@@ -1530,12 +1530,7 @@ function stopSlideShow(){
   ssLayerA.innerHTML = '';
   ssLayerB.innerHTML = '';
 
-  // 再生中のURLを解放
-  try{
-    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')){
-      URL.revokeObjectURL(__currentObjectUrl);
-    }
-  }catch{}
+  // ★ メディアURLは解放しない（再テストで再利用するため）
   __currentObjectUrl = null;
 
   if (ssAudio){ try{ ssAudio.pause(); }catch{} }
@@ -1579,18 +1574,39 @@ function showNext(first=false){
   };
 
   img.addEventListener('load', ()=>{
+  if (!ssRunning) return;
+  if (first) ssOverlay.style.display='flex';
+
+  layer.appendChild(img);
+  placeAndKenBurns(img);
+  crossfade();
+
+  // ★ prevUrl は解放しない（選択メディアの blob:URL を保持）
+  if (ssNextTid){ clearTimeout(ssNextTid); }
+  ssNextTid = setTimeout(()=>{
+    ssNextTid = null;
     if (!ssRunning) return;
-    if (first) ssOverlay.style.display='flex';
+    ssIndex++;
+    showNext(false);
+  }, dur*1000);
+}, { once:true });
 
-    layer.appendChild(img);
-    placeAndKenBurns(img);
-    crossfade();
+// ★ 追加：読み込み失敗時は次へ進む保険
+img.addEventListener('error', ()=>{
+  if (!ssRunning) return;
+  ssIndex++;
+  showNext(false);
+}, { once:true });
 
-    // revoke はしない：次周回で同じ blob URL を再利用するため
-
-    if (ssNextTid){ clearTimeout(ssNextTid); }
-    ssNextTid = setTimeout(()=>{ ssNextTid = null; advance(); }, dur*1000);
-  }, { once:true });
+// ★ 追加：極端に遅い場合の保険（画像が来なければ次へ）
+setTimeout(()=>{
+  if (!ssRunning) return;
+  // まだ layer に画像が入っていなければ次へ
+  if (!layer.querySelector('img')) {
+    ssIndex++;
+    showNext(false);
+  }
+}, Math.max(3000, dur*1000 + 1500));
 
   // 読み込み失敗でも止まらず次へ
   img.addEventListener('error', advance, { once:true });
