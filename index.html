@@ -697,8 +697,8 @@ $('saveBtn').addEventListener('click', ()=>{
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const a=document.createElement('a'); const base = (editor.nameEl.value||data.name||'layout').trim();
   const now=new Date();
-  const ts=${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')};
-  a.download=${base}_${ts}.json; a.href=URL.createObjectURL(blob); a.click();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  a.download = `${base}_${ts}.json`; a.href=URL.createObjectURL(blob); a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),0);
 });
 $('openBtn').addEventListener('click', ()=> $('fileOpen').click());
@@ -781,8 +781,8 @@ window.addEventListener('resize', ()=>{
 const dateEl=$('dateText'), timeEl=$('timeText');
 function updateClock(){
   const d=new Date(), wk=['日','月','火','水','木','金','土'][d.getDay()];
-  dateEl.textContent=${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())}（${wk}）;
-  timeEl.textContent=${fmt2(d.getHours())}:${fmt2(d.getMinutes())};
+  dateEl.textContent = `${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())}（${wk})`;
+  timeEl.textContent = `${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`;
 }
 updateClock(); setInterval(updateClock, 30000);
 
@@ -812,7 +812,7 @@ function openSeatOps(seatNo){
   const entry = seatState[seatNo];
   if (isBusyEntry(entry)) {
     const uid = (entry && entry.uid) ? entry.uid : '不明';
-    seatOpsUsage.textContent = \使用中（${uid}）`;`
+    seatOpsUsage.textContent = `使用中（${uid})`;
   } else {
     seatOpsUsage.textContent = '';
   }
@@ -846,7 +846,7 @@ opsOk.addEventListener('click', ()=>{
     pushLog({
       uid,
       action: 'move',
-      seatNo: \${from}->${to}`,`
+      seatNo: `${from}->${to}`,
       method: 'admin',
       roomPrefix: uid ? String(uid).slice(0,3) : '',
       star: false
@@ -1002,7 +1002,7 @@ $('assignOk').addEventListener('click', ()=>{
   gotoRun();
 });
 function openAssignWithSeat(seatNo){
-  assignMsg.textContent = No.${seatNo} の座席を利用してください。;
+  assignMsg.textContent = `No.${seatNo} の座席を利用してください。`;
   assignDlg.style.display='flex';
 }
 
@@ -1234,7 +1234,7 @@ function updateBgmNow(){
   } else if (ssBgmList.length===1) {
     el.textContent = ssBgmList[0].title || '(タイトルなし)';
   } else {
-    el.textContent = ${ssBgmList.length}曲選択中;
+    el.textContent = `${ssBgmList.length}曲選択中`;
   }
 }
 $('btnSsBack').addEventListener('click', gotoMain);
@@ -1524,8 +1524,8 @@ function placeAndKenBurns(img){
   img.style.transformOrigin='center center';
   img.style.transform='translate(-50%,-50%) scale(1)';
   img.animate([
-    { transform:translate(-50%,-50%) scale(${startScale}) translate(0px,0px) },
-    { transform:translate(-50%,-50%) scale(${endScale}) translate(${dx}px,${dy}px) }
+    { transform: `translate(-50%,-50%) scale(${startScale}) translate(0px,0px)` },
+    { transform: `translate(-50%,-50%) scale(${endScale}) translate(${dx}px,${dy}px)` }
   ], { duration: Math.max(3000, (window.__ssDurationSec||10)*1000), easing:'ease-in-out', fill:'forwards' });
 }
 
@@ -1546,7 +1546,7 @@ function fmtDate(any){
       const d = new Date(ms);
       if(isNaN(d)) return '—';
       const p=n=>String(n).padStart(2,'0');
-      return ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())};
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
     }
     // 文字列: 数字のみなら parseInt、その他は Date に委譲
     const s = String(any).trim();
@@ -1556,12 +1556,12 @@ function fmtDate(any){
       const d = new Date(ms);
       if(isNaN(d)) return '—';
       const p=n=>String(n).padStart(2,'0');
-      return ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())};
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
     }
     const d = new Date(s);
     if(isNaN(d)) return '—';
     const p=n=>String(n).padStart(2,'0');
-    return ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())};
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }catch{ return '—'; }
 }
 
@@ -1582,7 +1582,7 @@ function fmtDuration(v){
       return fmtDuration(parseInt(s,10));
     }
     if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)){ // "m:ss" or "h:mm:ss"
-      return s.length===4 ? 0:${s} : s; // 念の為ゼロ詰め
+      return s.length===4 ? `0:${s}` : s; // 念の為ゼロ詰め
     }
     return '—';
   }
@@ -1592,11 +1592,11 @@ async function getPlayableUrlFromBgmApp(id){
   const ensureAbs = (u)=>{
     if(!u) return '';
     if(/^https?:\/\//i.test(u)) return u;           // 既に絶対URL
-    if(u.startsWith('/')) return ${BGM_SITE}${u}; // /audio/... はサイト直下を指す
-    return ${BGM_SITE}/${u};
+    if(u.startsWith('/')) return `${BGM_SITE}${u}`; // /audio/... はサイト直下を指す
+    return `${BGM_SITE}/${u}`;
   };
   try{
-    const r = await fetch(${BGM_FN_BASE}/geturl?id=${encodeURIComponent(id)}, { mode:'cors', credentials:'omit' });
+    const r = await fetch(`${BGM_FN_BASE}/geturl?id=${encodeURIComponent(id)}`, { mode:'cors', credentials:'omit' });
     if(r.ok){
       const js = await r.json().catch(()=>null);
       const u = (js && (js.url || js.path)) ? (js.url || js.path) : '';
@@ -1604,8 +1604,7 @@ async function getPlayableUrlFromBgmApp(id){
     }
   }catch{}
   // フォールバックは Functions の download → そこから最終URLへリダイレクトされる想定
-  return ${BGM_FN_BASE}/download?id=${encodeURIComponent(id)};
-}
+  return `${BGM_FN_BASE}/download?id=${encodeURIComponent(id)}`;
 
 let __bgmPicked = null; // {id,title,url}
 
@@ -1662,7 +1661,7 @@ async function loadBgmList(){
   <tr><td colspan="4" class="center muted">読み込み中…</td></tr>
 `;
   try{
-    const r = await fetch(${BGM_FN_BASE}/list, { mode:'cors', credentials:'omit' });
+    const r = await fetch(`${BGM_FN_BASE}/list`, { mode:'cors', credentials:'omit' });
     const js = await r.json();
 
     if(!(js && (Array.isArray(js.items) || Array.isArray(js.data)))) {
@@ -1678,7 +1677,7 @@ async function loadBgmList(){
 })).filter(it => !!it.id);
 
     if(items.length===0){
-      tbody.innerHTML = <tr><td colspan="5" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>;
+      tbody.innerHTML = `<tr><td colspan="5" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>`;
       return;
     }
 
@@ -1687,7 +1686,7 @@ async function loadBgmList(){
     items.forEach(it=>{
       const tr = document.createElement('tr');
       tr.className = 'pick-row';
-      tr.innerHTML = 
+      tr.innerHTML = `
   <td class="center">
     <input type="checkbox" class="pick" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}" />
   </td>
@@ -1696,6 +1695,7 @@ async function loadBgmList(){
   <td class="center">
     <button class="btn btn-preview" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}">試聴</button>
   </td>
+`;
 ;
       // 先にサーバが出しているフィールドがあれば反映
       if (it.durationSec) tr.querySelector('.cell-dur').textContent = fmtDuration(it.durationSec);
@@ -1726,7 +1726,7 @@ async function loadBgmList(){
     }
 
   }catch(err){
-    tbody.innerHTML = <tr><td colspan="5" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>;
+    tbody.innerHTML = `<tr><td colspan="5" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>`;
   }
 }
 document.addEventListener('click', async (ev)=>{
@@ -1787,7 +1787,7 @@ async function previewAndPick(it){
     // ユーザー操作起因なので play は許可されるはず
     await a.play();
     __bgmPicked = { id: it.id, title: it.title || '', url };
-    msg.textContent = 選択中：${it.title || '(タイトルなし)'};
+    msg.textContent = `選択中：${it.title || '(タイトルなし)'}`;
   }catch(e){
     msg.textContent = '再生に失敗しました';
   }
