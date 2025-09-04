@@ -538,7 +538,12 @@ function toDisp(d){ return `${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 /* ===== 画面遷移 ===== */
-function gotoTitle(){ stopCamera(); show('view-title'); }
+function gotoTitle(){
+  stopCamera();
+  if (typeof stopSlideShow === 'function') stopSlideShow();
+  const o = $('ssOverlay'); if (o) o.style.display = 'none';
+  show('view-title');
+}
 function gotoMain(){ stopCamera(); show('view-main'); }
 function gotoLayout(){ stopCamera(); renderEditor(); show('view-layout'); }
 function gotoRun(){
@@ -1164,7 +1169,16 @@ async function flushLogQueue(){
 window.addEventListener('online', flushLogQueue);
 window.addEventListener('focus', flushLogQueue);
 document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') flushLogQueue(); });
-window.addEventListener('load', ()=>{ flushLogQueue(); loadSsSettings(); resetIdleTimer(); });
+window.addEventListener('load', ()=>{
+  // 起動直後にスライドショーの残骸があれば必ず消す
+  const o = $('ssOverlay');
+  if (o) o.style.display = 'none';
+  if (typeof stopSlideShow === 'function') stopSlideShow();
+
+  flushLogQueue();
+  loadSsSettings();
+  resetIdleTimer();
+});
 
 /* ====== スライドショー（全画面・アイドル起動） ====== */
 const SS_KEY = 'ss.settings.v1';
