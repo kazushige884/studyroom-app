@@ -1422,7 +1422,6 @@ function startSlideShow(force=false){
   ssIndex = 0;
   ssShowingA = true;
   ssFirstFrame = true;
-  ssOverlay.style.display='flex';
 
   // BGM（複数曲：ランダム連続再生）
   if (ssBgmList && ssBgmList.length > 0) {
@@ -1437,7 +1436,9 @@ function startSlideShow(force=false){
     ssAudio.volume = 1;
     playRandomBgm(); // 最初の1曲を流す
   }
-  showNext();
+
+  // ← 初回は「ロード完了を待ってから」オーバーレイ表示＆フェード
+  showNext(true);
 }
 function playRandomBgm(){
   if (!ssBgmList || ssBgmList.length===0 || !ssAudio) return;
@@ -1475,7 +1476,7 @@ function stopSlideShow(){
   if (ssAudio){ try{ ssAudio.pause(); }catch{} }
 }
 ssOverlay.addEventListener('click', ()=>{ stopSlideShow(); resetIdleTimer(); });
-function showNext(){
+function showNext(first=false){
   if (!ssRunning) return;
 
   const len = mediaCount();
@@ -1511,31 +1512,37 @@ function showNext(){
 
   if ((item && item.type || '').startsWith('image')){
     const url = makeUrlForLogical(logical);
-    if (!url){ ssIndex++; return showNext(); }
+    if (!url){ ssIndex++; return showNext(first); }
 
     const prevUrl = __currentObjectUrl;
     __currentObjectUrl = url;
 
     const img = document.createElement('img');
     img.className = 'ssImg';
-    // 画像はロード完了を待ってからクロスフェード（初回黒画面対策）
+
     img.addEventListener('load', ()=>{
       if (!ssRunning) return;
+
+      // 初回のみ、ロードが終わってからオーバーレイを出す（黒画面回避）
+      if (first) {
+        ssOverlay.style.display='flex';
+      }
+
       layer.appendChild(img);
       placeAndKenBurns(img);
-      // 初回は“隠す側”が空なのでフェードで黒が出ないようにする
       crossfade();
-      // 使い終えた前のURLを解放
+
       if (prevUrl && prevUrl.startsWith('blob:')) {
         try{ URL.revokeObjectURL(prevUrl); }catch{}
       }
-      setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+      setTimeout(()=>{ ssIndex++; showNext(false); }, dur*1000);
     }, { once:true });
+
     img.src = url;
 
-  }else{
+  } else {
     const url = makeUrlForLogical(logical);
-    if (!url){ ssIndex++; return showNext(); }
+    if (!url){ ssIndex++; return showNext(first); }
 
     const prevUrl = __currentObjectUrl;
     __currentObjectUrl = url;
@@ -1550,10 +1557,15 @@ function showNext(){
 
     vd.addEventListener('loadeddata', ()=>{
       if (!ssRunning) return;
+
+      if (first) {
+        ssOverlay.style.display='flex';
+      }
+
       layer.appendChild(vd);
       crossfade();
       vd.play().catch(()=>{});
-      // 前のURLを解放
+
       if (prevUrl && prevUrl.startsWith('blob:')) {
         try{ URL.revokeObjectURL(prevUrl); }catch{}
       }
@@ -1561,7 +1573,7 @@ function showNext(){
 
     vd.addEventListener('ended', ()=>{
       ssIndex++;
-      showNext();
+      showNext(false);
     }, { once:true });
   }
 }
