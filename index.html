@@ -1488,9 +1488,18 @@ const makeUrlForIndex = (idx)=>{
 };
 
 if ((item.type||'').startsWith('image')){
-  const url = makeUrlForIndex(ssIndex);
-  if (!url){ ssIndex++; return showNext(); }
-  __currentObjectUrl = url;
+  let url = makeUrlForIndex(ssIndex);
+
+// ★空要素をスキップして次へ
+let guard = 0;
+while(!url && guard < mediaCount()){
+  ssIndex++;
+  url = makeUrlForIndex(ssIndex);
+  guard++;
+}
+if (!url){ stopSlideShow(); return; }
+
+__currentObjectUrl = url;
 
   const img = document.createElement('img');
   img.src = url; img.className='ssImg';
