@@ -520,7 +520,7 @@
 const BGM_API_BASE = 'https://superlative-bienenstitch-e300de.netlify.app/.netlify/functions';
 /* ===== 固定：BGM管理アプリ Functions ベースURL ===== */
 const BGM_SITE   = 'https://superlative-bienenstitch-e300de.netlify.app';
-const BGM_FN_BASE = ${BGM_SITE}/.netlify/functions;
+const BGM_FN_BASE = `${BGM_SITE}/.netlify/functions`;
 
 /* ===== 共通キー・ユーティリティ ===== */
 const KEY_LAYOUT='studyroom-layout-v7', KEY_NAME='studyroom-name-v7', KEY_UNLOCK='unlock-pw';
@@ -533,8 +533,8 @@ function show(id){
   $(id).classList.remove('hidden');
 }
 function fmt2(n){ return String(n).padStart(2,'0'); }
-function toDateStr(d){ return ${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}; }
-function toDisp(d){ return ${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())} ${fmt2(d.getHours())}:${fmt2(d.getMinutes())}; }
+function toDateStr(d){ return `${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}`; }
+function toDisp(d){ return `${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())} ${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`; }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 /* ===== 画面遷移 ===== */
@@ -588,8 +588,8 @@ function generateReport(){
   let lines = ['利用ID,入室時刻,退出時刻'];
   for(const r of hist){
     const inStr  = r.inAt ? toDisp(new Date(r.inAt)) : '';
-    const outStr = r.outAt ? ${toDisp(new Date(r.outAt))}${r.outMarked?'★':''} : '';
-    lines.push([${r.uid||''},${inStr},${outStr}].join(','));
+    const outStr = r.outAt ? `${toDisp(new Date(r.outAt))}${r.outMarked?'★':''}` : '';
+    lines.push([r.uid||'', inStr, outStr].join(','));
   }
   const csvBody = lines.join('\r\n');
 
@@ -598,15 +598,15 @@ function generateReport(){
   const blob = new Blob([bom + csvBody], {type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = ${pick.replaceAll('-','')}_利用履歴.csv;
+  a.download = `${pick.replaceAll('-','')}_利用履歴.csv`;
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
 
   // メール下書き（mailto）を開く
-  const subject = encodeURIComponent(利用履歴CSV ${pick});
-  const body    = encodeURIComponent(csvBody);
-  location.href = mailto:k_hayashi@sozogakuen.co.jp?subject=${subject}&body=${body};
+  const subject = encodeURIComponent(`利用履歴CSV ${pick}`);
+const body    = encodeURIComponent(csvBody);
+location.href = `mailto:k_hayashi@sozogakuen.co.jp?subject=${subject}&body=${body}`;
 }
 
 /* ロック解除PW保存（メイン） */
@@ -751,8 +751,8 @@ function renderRun(){
   if(!g){ liveGrid.innerHTML='<div style="opacity:.7">レイアウトが見つかりません（レイアウト作成で保存してください）</div>'; return; }
   const {minX,minY,maxX,maxY}=computeCroppedArea(g);
   const cols=maxX-minX+1, rows=maxY-minY+1;
-  liveGrid.style.gridTemplateColumns = repeat(${cols}, var(--cell));
-  liveGrid.style.gridTemplateRows = repeat(${rows}, var(--cell));
+  liveGrid.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
+liveGrid.style.gridTemplateRows = `repeat(${rows}, var(--cell))`;
   liveGrid.innerHTML='';
   for(let y=minY;y<=maxY;y++){
     for(let x=minX;x<=maxX;x++){
@@ -812,7 +812,7 @@ function openSeatOps(seatNo){
   const entry = seatState[seatNo];
   if (isBusyEntry(entry)) {
     const uid = (entry && entry.uid) ? entry.uid : '不明';
-    seatOpsUsage.textContent = 使用中（${uid}）;
+    seatOpsUsage.textContent = \使用中（${uid}）`;`
   } else {
     seatOpsUsage.textContent = '';
   }
@@ -846,7 +846,7 @@ opsOk.addEventListener('click', ()=>{
     pushLog({
       uid,
       action: 'move',
-      seatNo: ${from}->${to},
+      seatNo: \${from}->${to}`,`
       method: 'admin',
       roomPrefix: uid ? String(uid).slice(0,3) : '',
       star: false
@@ -977,7 +977,10 @@ function openConfirmWithValue(v){
   }
 
   lastScannedValue = v;
-  confirmMsgEl.textContent = (scanMode==='enter') ? ${v}　利用を開始しますか？ : ${v}　利用を終了しますか？;
+  confirmMsgEl.textContent =
+  (scanMode==='enter')
+    ? `${v}　利用を開始しますか？`
+    : `${v}　利用を終了しますか？`;
   confirmDlg.style.display='flex';
 }
 
@@ -1655,7 +1658,9 @@ $('bgmReload').addEventListener('click', loadBgmList);
 
 async function loadBgmList(){
   const tbody = $('bgmTbody');
-  tbody.innerHTML = <tr><td colspan="4" class="center muted">読み込み中…</td></tr>;
+  tbody.innerHTML = `
+  <tr><td colspan="4" class="center muted">読み込み中…</td></tr>
+`;
   try{
     const r = await fetch(${BGM_FN_BASE}/list, { mode:'cors', credentials:'omit' });
     const js = await r.json();
