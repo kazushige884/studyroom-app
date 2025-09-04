@@ -1176,6 +1176,7 @@ const isIOSLike = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.pla
 let ssTransientMode = isIOSLike;
 let ssPickedFiles = [];
 let __currentObjectUrl = null;
+let __currentUrlEphemeral = false; // 直前スライドのURLが一時生成かどうか
 let ssEnabledFlag = false;
 let ssFilesArr = []; // {type:'image'|'video', url:objectURL}
 // 複数曲対応：選択された曲の配列 [{id,title,url}]
@@ -1255,11 +1256,12 @@ $('ssFiles').addEventListener('change', async (e)=>{
 
   // 再生中URLを解放
   try{
-    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+    if (__currentUrlEphemeral && __currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
       URL.revokeObjectURL(__currentObjectUrl);
     }
   }catch{}
   __currentObjectUrl = null;
+  __currentUrlEphemeral = false;
 
   if (ssTransientMode) {
     // iPad: 保存せずに直接再生
@@ -1288,11 +1290,12 @@ $('clearMedia').addEventListener('click', ()=>{
   stopSlideShow();
   // 再生中URLを解放
   try{
-    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+    if (__currentUrlEphemeral && __currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
       URL.revokeObjectURL(__currentObjectUrl);
     }
   }catch{}
   __currentObjectUrl = null;
+  __currentUrlEphemeral = false;
 
   try{
     (Array.isArray(ssFilesArr)? ssFilesArr : []).forEach(it=>{
@@ -1463,11 +1466,12 @@ function showNext(){
   layer.innerHTML='';
   // 直前のURLを解放
 try{
-  if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+  if (__currentUrlEphemeral && __currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
     URL.revokeObjectURL(__currentObjectUrl);
   }
 }catch{}
 __currentObjectUrl = null;
+__currentUrlEphemeral = false;
 
 // URLをその場で生成
 const makeUrlForIndex = (idx)=>{
@@ -1482,15 +1486,20 @@ const makeUrlForIndex = (idx)=>{
 
 if ((item.type||'').startsWith('image')){
   const url = makeUrlForIndex(ssIndex);
-  if (!url){ ssIndex++; return showNext(); }
-  __currentObjectUrl = url;
+if (!url){ ssIndex++; return showNext(); }
+__currentObjectUrl = url;
+__currentUrlEphemeral = ssTransientMode; // 一時URLなら次スライドで破棄OK
 
-  const img = document.createElement('img');
-  img.onload = ()=>{  // ロード成功時だけ表示
-    layer.appendChild(img);
-    placeAndKenBurns(img);
-    crossfade();
-    setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+const img = document.createElement('img');
+img.className='ssImg';
+img.onload = ()=>{
+  placeAndKenBurns(img);
+  crossfade();
+  setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+};
+img.onerror = ()=>{ ssIndex++; showNext(); };
+img.src = url;
+layer.appendChild(img);
   };
   img.onerror = ()=>{ // エラーならスキップ
     ssIndex++;
@@ -1501,15 +1510,18 @@ if ((item.type||'').startsWith('image')){
 
 }else{
   const url = makeUrlForIndex(ssIndex);
-  if (!url){ ssIndex++; return showNext(); }
-  __currentObjectUrl = url;
+if (!url){ ssIndex++; return showNext(); }
+__currentObjectUrl = url;
+__currentUrlEphemeral = ssTransientMode; // 一時URLなら次スライドで破棄OK
 
-  const vd = document.createElement('video');
-  vd.src=url; vd.className='ssVid'; vd.autoplay=true; vd.loop=false; vd.muted=true; vd.playsInline=true;
-  vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, {once:true});
-  vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
-  vd.onerror = ()=>{ ssIndex++; showNext(); }; // ← エラー時スキップ
-  layer.appendChild(vd);
+const vd = document.createElement('video');
+vd.className='ssVid';
+vd.autoplay=true; vd.loop=false; vd.muted=true; vd.playsInline=true;
+vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, {once:true});
+vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
+vd.addEventListener('error', ()=>{ ssIndex++; showNext(); }, {once:true});
+vd.src = url;
+layer.appendChild(vd);
 }
 }
 function crossfade(){
