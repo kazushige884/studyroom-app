@@ -1187,9 +1187,20 @@ let ssAudio = null;
 let __bgmIndex = -1; // 直前に再生したインデックス（連続同一回避用）
 const ssOverlay = $('ssOverlay'), ssLayerA=$('ssLayerA'), ssLayerB=$('ssLayerB');
 let ssIndex=0, ssShowingA=true, ssRunning=false;
+let ssOrder = [];      // 再生順インデックス配列（ランダム）
+let ssFirstFrame = true; // 初回フレームは画像ロード完了を待ってからフェード
 
 // 追加：現在選択されているメディア数を返す（iPad一時再生対応）
 function mediaCount(){ return ssTransientMode ? ssPickedFiles.length : ssFilesArr.length; }
+
+function buildRandomOrder(len){
+  const arr = Array.from({length: len}, (_,i)=>i);
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
 
 function loadSsSettings(){
   try{
@@ -1389,7 +1400,7 @@ function primeBgmFromGesture(){
   }catch{}
 }
 function startSlideShow(force=false){
-  if (!force && (!ssEnabledFlag || ssFilesArr.length===0)) return;
+  if (!force && (!ssEnabledFlag || mediaCount()===0)) return;
 
   // ★ 前回の残りを完全クリア
   try{
@@ -1403,9 +1414,14 @@ function startSlideShow(force=false){
   ssLayerA.classList.remove('show');
   ssLayerB.classList.remove('show');
 
+  // 再生順をランダムに作成
+  const len = mediaCount();
+  ssOrder = buildRandomOrder(len);
+
   ssRunning = true;
   ssIndex = 0;
   ssShowingA = true;
+  ssFirstFrame = true;
   ssOverlay.style.display='flex';
 
   // BGM（複数曲：ランダム連続再生）
@@ -1461,80 +1477,93 @@ function stopSlideShow(){
 ssOverlay.addEventListener('click', ()=>{ stopSlideShow(); resetIdleTimer(); });
 function showNext(){
   if (!ssRunning) return;
+
   const len = mediaCount();
   if (len===0){ stopSlideShow(); return; }
-  const idx = ssIndex % len;
-  // transient時は実ファイル配列からtypeを取る（ssFilesArrは型だけのダミーを持つため）
-  const f = ssPickedFiles[idx];
-const isImage = f ? ((f.type || '').startsWith('image')
-  || /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(f.name || '')) : false;
-// transient時は type が空でも拡張子で画像判定する
-const item = ssTransientMode ? { type: isImage ? 'image/any' : (f?.type || '') } : ssFilesArr[idx];
+
+  // 1周したら順番を再シャッフル
+  if (ssIndex > 0 && ssIndex % len === 0){
+    ssOrder = buildRandomOrder(len);
+  }
+
+  const logical = ssOrder[ssIndex % len];
+
+  // transient時は実ファイル配列から type を判定
+  const f = ssPickedFiles[logical];
+  const isImage = f ? ((f.type || '').startsWith('image') ||
+    /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(f.name || '')) : false;
+  const item = ssTransientMode ? { type: isImage ? 'image/any' : (f?.type || '') } : ssFilesArr[logical];
+
   const dur = Math.max(3, window.__ssDurationSec||10);
   const layer = ssShowingA ? ssLayerB : ssLayerA; // 次に出すレイヤ
   layer.innerHTML='';
-  // 直前のURLを解放
-try{
-  if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
-    URL.revokeObjectURL(__currentObjectUrl);
-  }
-}catch{}
-__currentObjectUrl = null;
 
-// URLをその場で生成
-const makeUrlForIndex = (idx)=>{
-  if (ssTransientMode) {
-    const f = ssPickedFiles[idx % ssPickedFiles.length];
-    if (!f) return null;
-    return URL.createObjectURL(f);
-  } else {
-    return ssFilesArr[idx % ssFilesArr.length].url || null;
-  }
-};
-
-if ((item.type||'').startsWith('image')){
-  const url = makeUrlForIndex(ssIndex);
-  if (!url){ ssIndex++; return showNext(); }
-  __currentObjectUrl = url;
-
-  const layer = ssShowingA ? ssLayerB : ssLayerA;
-  layer.innerHTML = '';
-
-  const img = new Image();
-  img.className = 'ssImg';
-  img.onload = ()=>{
-    layer.appendChild(img);
-    placeAndKenBurns(img);
-    crossfade();
-    setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+  // URL生成（論理インデックスから）
+  const makeUrlForLogical = (i)=>{
+    if (ssTransientMode) {
+      const file = ssPickedFiles[i];
+      if (!file) return null;
+      return URL.createObjectURL(file);
+    } else {
+      return (ssFilesArr[i] && ssFilesArr[i].url) ? ssFilesArr[i].url : null;
+    }
   };
-  img.onerror = ()=>{
-    try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch{}
-    ssIndex++; showNext(); // 読めない画像は即スキップ
-  };
-  img.src = url;
-}else{
-  const url = makeUrlForIndex(ssIndex);
-  if (!url){ ssIndex++; return showNext(); }
-  __currentObjectUrl = url;
 
-  const layer = ssShowingA ? ssLayerB : ssLayerA;
-  layer.innerHTML = '';
+  if ((item && item.type || '').startsWith('image')){
+    const url = makeUrlForLogical(logical);
+    if (!url){ ssIndex++; return showNext(); }
 
-  const vd = document.createElement('video');
-  vd.src = url;
-  vd.className = 'ssVid';
-  vd.autoplay = true;
-  vd.loop = false;
-  vd.muted = true;
-  vd.playsInline = true;
+    const prevUrl = __currentObjectUrl;
+    __currentObjectUrl = url;
 
-  vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
-  vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, { once:true });
-  vd.addEventListener('error', ()=>{ ssIndex++; showNext(); }, { once:true }); // 追加：読めない動画はスキップ
+    const img = document.createElement('img');
+    img.className = 'ssImg';
+    // 画像はロード完了を待ってからクロスフェード（初回黒画面対策）
+    img.addEventListener('load', ()=>{
+      if (!ssRunning) return;
+      layer.appendChild(img);
+      placeAndKenBurns(img);
+      // 初回は“隠す側”が空なのでフェードで黒が出ないようにする
+      crossfade();
+      // 使い終えた前のURLを解放
+      if (prevUrl && prevUrl.startsWith('blob:')) {
+        try{ URL.revokeObjectURL(prevUrl); }catch{}
+      }
+      setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+    }, { once:true });
+    img.src = url;
 
-  layer.appendChild(vd);
-}
+  }else{
+    const url = makeUrlForLogical(logical);
+    if (!url){ ssIndex++; return showNext(); }
+
+    const prevUrl = __currentObjectUrl;
+    __currentObjectUrl = url;
+
+    const vd = document.createElement('video');
+    vd.src = url;
+    vd.className = 'ssVid';
+    vd.autoplay = true;
+    vd.loop = false;
+    vd.muted = true;
+    vd.playsInline = true;
+
+    vd.addEventListener('loadeddata', ()=>{
+      if (!ssRunning) return;
+      layer.appendChild(vd);
+      crossfade();
+      vd.play().catch(()=>{});
+      // 前のURLを解放
+      if (prevUrl && prevUrl.startsWith('blob:')) {
+        try{ URL.revokeObjectURL(prevUrl); }catch{}
+      }
+    }, { once:true });
+
+    vd.addEventListener('ended', ()=>{
+      ssIndex++;
+      showNext();
+    }, { once:true });
+  }
 }
 function crossfade(){
   const show = ssShowingA ? ssLayerB : ssLayerA;
