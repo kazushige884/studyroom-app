@@ -1486,11 +1486,19 @@ if ((item.type||'').startsWith('image')){
   __currentObjectUrl = url;
 
   const img = document.createElement('img');
-  img.src = url; img.className='ssImg';
-  layer.appendChild(img);
-  placeAndKenBurns(img);
-  crossfade();
-  setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+  img.onload = ()=>{  // ロード成功時だけ表示
+    layer.appendChild(img);
+    placeAndKenBurns(img);
+    crossfade();
+    setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+  };
+  img.onerror = ()=>{ // エラーならスキップ
+    ssIndex++;
+    showNext();
+  };
+  img.src = url;
+  img.className='ssImg';
+
 }else{
   const url = makeUrlForIndex(ssIndex);
   if (!url){ ssIndex++; return showNext(); }
@@ -1500,6 +1508,7 @@ if ((item.type||'').startsWith('image')){
   vd.src=url; vd.className='ssVid'; vd.autoplay=true; vd.loop=false; vd.muted=true; vd.playsInline=true;
   vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, {once:true});
   vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
+  vd.onerror = ()=>{ ssIndex++; showNext(); }; // ← エラー時スキップ
   layer.appendChild(vd);
 }
 }
