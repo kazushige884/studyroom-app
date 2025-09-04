@@ -199,7 +199,7 @@
   #infoDlg .btns .btn{font-size:20px;padding:10px 18px}
 
   /* ======= スライドショー（全画面） ======= */
-  #ssOverlay{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:9999;cursor:none;pointer-events:none}
+  #ssOverlay{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:9999;cursor:none}
   #ssStage{position:relative;width:100vw;height:100vh;overflow:hidden;background:#000}
   .ssLayer{position:absolute;inset:0;opacity:0;transition:opacity 1200ms ease}
   .ssLayer.show{opacity:1}
@@ -491,14 +491,13 @@
       <table>
         <thead>
   <tr>
-    <th style="width:60px" class="center">選択</th>
     <th>Title</th>
     <th style="width:120px" class="right">DURATION</th>
     <th style="width:120px" class="center">操作</th>
   </tr>
 </thead>
         <tbody id="bgmTbody">
-  <tr><td colspan="4" class="center muted">読み込み中…</td></tr>
+  <tr><td colspan="3" class="center muted">読み込み中…</td></tr>
 </tbody>
       </table>
     </div>
@@ -538,12 +537,7 @@ function toDisp(d){ return `${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 /* ===== 画面遷移 ===== */
-function gotoTitle(){
-  stopCamera();
-  if (typeof stopSlideShow === 'function') stopSlideShow();
-  const o = $('ssOverlay'); if (o) o.style.display = 'none';
-  show('view-title');
-}
+function gotoTitle(){ stopCamera(); show('view-title'); }
 function gotoMain(){ stopCamera(); show('view-main'); }
 function gotoLayout(){ stopCamera(); renderEditor(); show('view-layout'); }
 function gotoRun(){
@@ -1169,16 +1163,7 @@ async function flushLogQueue(){
 window.addEventListener('online', flushLogQueue);
 window.addEventListener('focus', flushLogQueue);
 document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') flushLogQueue(); });
-window.addEventListener('load', ()=>{
-  // 起動直後にスライドショーの残骸があれば必ず消す
-  const o = $('ssOverlay');
-  if (o) o.style.display = 'none';
-  if (typeof stopSlideShow === 'function') stopSlideShow();
-
-  flushLogQueue();
-  loadSsSettings();
-  resetIdleTimer();
-});
+window.addEventListener('load', ()=>{ flushLogQueue(); loadSsSettings(); resetIdleTimer(); });
 
 /* ====== スライドショー（全画面・アイドル起動） ====== */
 const SS_KEY = 'ss.settings.v1';
@@ -1190,18 +1175,13 @@ const isIOSLike = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.pla
 let ssTransientMode = isIOSLike;
 let ssPickedFiles = [];
 let __currentObjectUrl = null;
-let __currentUrlEphemeral = false; // 直前スライドのURLが一時生成かどうか
 let ssEnabledFlag = false;
 let ssFilesArr = []; // {type:'image'|'video', url:objectURL}
-// 複数曲対応：選択された曲の配列 [{id,title,url}]
-let ssBgmList = [];
+let ssBgmUrl = '';
+let ssBgmTitle = '';
 let ssAudio = null;
-let __bgmIndex = -1; // 直前に再生したインデックス（連続同一回避用）
 const ssOverlay = $('ssOverlay'), ssLayerA=$('ssLayerA'), ssLayerB=$('ssLayerB');
 let ssIndex=0, ssShowingA=true, ssRunning=false;
-
-// 追加：現在選択されているメディア数を返す（iPad一時再生対応）
-function mediaCount(){ return ssTransientMode ? ssPickedFiles.length : ssFilesArr.length; }
 
 function loadSsSettings(){
   try{
@@ -1209,7 +1189,8 @@ function loadSsSettings(){
     ssEnabledFlag = !!s.enabled;
     ssIdleMs = Math.max(1000, (s.idleMin||10)*60000);
     window.__ssDurationSec = Math.max(3, s.durationSec||10);
-    ssBgmList = Array.isArray(s.bgmList) ? s.bgmList : [];
+    ssBgmUrl = s.bgmUrl||'';
+    ssBgmTitle = s.bgmTitle||'';
     const media = JSON.parse(localStorage.getItem(SS_MEDIA_KEY)||'[]');
     ssFilesArr = media;
   }catch{
@@ -1223,13 +1204,11 @@ function saveSsSettingsUI(){
     enabled: $('ssEnabled').checked,
     idleMin: Number($('ssIdleMin').value || 10),
     durationSec: dur,
-    bgmList: Array.isArray(ssBgmList) ? ssBgmList : [],
+    bgmUrl: ssBgmUrl || '',
+    bgmTitle: ssBgmTitle || '',
   };
   localStorage.setItem(SS_KEY, JSON.stringify(s));
   window.__ssDurationSec = dur; // ← ここがポイント：すぐに startSlideShow が新秒数を使う
-  // 追加：グローバルの即時反映
-  ssEnabledFlag = s.enabled;
-  ssIdleMs = Math.max(1000, s.idleMin * 60000);
   updateBgmNow();
 }
 function loadSsSettingsUI(){
@@ -1241,13 +1220,7 @@ function loadSsSettingsUI(){
 }
 function updateBgmNow(){
   const el=$('bgmNow');
-  if (!ssBgmList || ssBgmList.length===0) {
-    el.textContent = '（未選択）';
-  } else if (ssBgmList.length===1) {
-    el.textContent = ssBgmList[0].title || '(タイトルなし)';
-  } else {
-    el.textContent = `${ssBgmList.length}曲選択中`;
-  }
+  el.textContent = ssBgmUrl ? (ssBgmTitle || '(タイトルなし)') : '（未選択）';
 }
 $('btnSsBack').addEventListener('click', gotoMain);
 $('btnSsSave').addEventListener('click', ()=>{
@@ -1256,12 +1229,8 @@ $('btnSsSave').addEventListener('click', ()=>{
   resetIdleTimer();
 });
 $('btnSsTest').addEventListener('click', ()=>{
-  saveSsSettingsUI(); // ↑で ssEnabledFlag / ssIdleMs も即時反映
-  if (ssFilesArr.length === 0 && ssPickedFiles.length === 0){
-    alert('写真・動画が選択されていません');
-    return;
-  }
-  startSlideShow(true); // 強制起動
+  saveSsSettingsUI();
+  startSlideShow();
 });
 
 /* メディア選択 */
@@ -1270,12 +1239,11 @@ $('ssFiles').addEventListener('change', async (e)=>{
 
   // 再生中URLを解放
   try{
-    if (__currentUrlEphemeral && __currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
       URL.revokeObjectURL(__currentObjectUrl);
     }
   }catch{}
   __currentObjectUrl = null;
-  __currentUrlEphemeral = false;
 
   if (ssTransientMode) {
     // iPad: 保存せずに直接再生
@@ -1300,16 +1268,13 @@ $('ssFiles').addEventListener('change', async (e)=>{
   }
 });
 $('clearMedia').addEventListener('click', ()=>{
-  // 実行中ならまず停止してレイヤも隠す
-  stopSlideShow();
   // 再生中URLを解放
   try{
-    if (__currentUrlEphemeral && __currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
       URL.revokeObjectURL(__currentObjectUrl);
     }
   }catch{}
   __currentObjectUrl = null;
-  __currentUrlEphemeral = false;
 
   try{
     (Array.isArray(ssFilesArr)? ssFilesArr : []).forEach(it=>{
@@ -1339,9 +1304,8 @@ $('clearMedia').addEventListener('click', ()=>{
 /* BGM 選択 */
 $('btnPickBgm').addEventListener('click', openBgmPicker);
 $('clearBgm').addEventListener('click', ()=>{
-  ssBgmList = [];
+  ssBgmUrl=''; ssBgmTitle='';
   saveSsSettingsUI();
-  updateBgmNow();
 });
 
 /* 画像ダウンスケール */
@@ -1371,19 +1335,14 @@ __gestureEvents.forEach(ev=>{
 function resetIdleTimer(){
   if (ssTimer) clearTimeout(ssTimer);
   loadSsSettings();
-
-  // タイトル画面（ログイン前）はスライドショー起動禁止
-  const onTitle = !document.getElementById('view-title').classList.contains('hidden');
-  if (onTitle){ stopSlideShow(); return; }
-
-  if (!ssEnabledFlag || mediaCount()===0){ stopSlideShow(); return; }
+  if (!ssEnabledFlag || ssFilesArr.length===0){ stopSlideShow(); return; }
   ssTimer = setTimeout(startSlideShow, ssIdleMs);
 }
 
 /* iOS対策：ユーザー操作中にBGMを一度だけ無音再生→停止して“解錠” */
 function primeBgmFromGesture(){
   try{
-    if(!ssBgmList || ssBgmList.length===0) return;
+    if(!ssBgmUrl) return;
     if(!ssAudio){
       ssAudio = new Audio();
       ssAudio.crossOrigin = 'anonymous';
@@ -1392,7 +1351,7 @@ function primeBgmFromGesture(){
     if (ssAudio.__primed) return;
 
     ssAudio.muted = true;
-    if (!ssAudio.src) ssAudio.src = ssBgmList[0].url; // 適当に先頭曲を使って“解錠”
+    if (!ssAudio.src) ssAudio.src = ssBgmUrl;
     ssAudio.play().then(()=>{
       // すぐ停止＆元に戻す（“再生可能な状態”だけ獲得）
       ssAudio.pause();
@@ -1402,38 +1361,25 @@ function primeBgmFromGesture(){
     }).catch(()=>{ /* 失敗しても次の操作でまた試す */ });
   }catch{}
 }
-function startSlideShow(force=false){
-  if (!force && (!ssEnabledFlag || ssFilesArr.length===0)) return;
-
-  // ★ 前回の残りを完全クリア
-  try{
-    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(__currentObjectUrl);
-    }
-  }catch{}
-  __currentObjectUrl = null;
-  ssLayerA.innerHTML = '';
-  ssLayerB.innerHTML = '';
-  ssLayerA.classList.remove('show');
-  ssLayerB.classList.remove('show');
-
+function startSlideShow(){
+  if (!ssEnabledFlag || ssFilesArr.length===0) return;
   ssRunning = true;
-  ssIndex = 0;
-  ssShowingA = true;
+  ssIndex = 0; ssShowingA = true;
   ssOverlay.style.display='flex';
-
-  // BGM（複数曲：ランダム連続再生）
-  if (ssBgmList && ssBgmList.length > 0) {
+  // BGM（ループ）— primed Audio を再利用して確実に鳴らす
+  if (ssBgmUrl){
     if (!ssAudio){
       ssAudio = new Audio();
       ssAudio.crossOrigin = 'anonymous';
-      ssAudio.loop = false; // 曲ごとに切替
-      ssAudio.addEventListener('ended', ()=>{ playRandomBgm(); });
+      ssAudio.loop = true;
     }
+    // URL更新（テスト→本番切替直後でも確実に最新に）
+    if (ssAudio.src !== ssBgmUrl) ssAudio.src = ssBgmUrl;
+
     try{ ssAudio.pause(); }catch{}
     ssAudio.muted = false;
     ssAudio.volume = 1;
-    playRandomBgm(); // 最初の1曲を流す
+    ssAudio.play().catch(()=>{ /* 念のため握りつぶし（iOS挙動差）*/ });
   }
   showNext();
 }
@@ -1456,78 +1402,51 @@ function stopSlideShow(){
 ssOverlay.addEventListener('click', ()=>{ stopSlideShow(); resetIdleTimer(); });
 function showNext(){
   if (!ssRunning) return;
-
-  const len = mediaCount();
-  if (len === 0){ stopSlideShow(); return; }
-
-  const idx = ssIndex % len;
-  const itemType = ssTransientMode
-    ? (ssPickedFiles[idx]?.type || '')
-    : (ssFilesArr[idx]?.type || '');
-
-  const dur = Math.max(3, window.__ssDurationSec || 10);
+  const item = ssFilesArr[ssIndex % ssFilesArr.length];
+  const dur = Math.max(3, window.__ssDurationSec||10);
   const layer = ssShowingA ? ssLayerB : ssLayerA; // 次に出すレイヤ
-  layer.innerHTML = '';
-
-  // 直前のURLを解放（そのURLが一時生成のときのみ）
-  try{
-    if (__currentUrlEphemeral && __currentObjectUrl && __currentObjectUrl.startsWith('blob:')){
-      URL.revokeObjectURL(__currentObjectUrl);
-    }
-  }catch{}
-  __currentObjectUrl = null;
-  __currentUrlEphemeral = false;
-
-  // URLをその場で生成
-  const makeUrlForIndex = (i)=>{
-    if (ssTransientMode){
-      const f = ssPickedFiles[i % ssPickedFiles.length];
-      return f ? URL.createObjectURL(f) : null;
-    }else{
-      const rec = ssFilesArr[i % ssFilesArr.length];
-      return rec && rec.url ? rec.url : null;
-    }
-  };
-
-  // 画像
-  if (itemType.startsWith('image')){
-    const url = makeUrlForIndex(ssIndex);
-    if (!url){ ssIndex++; return showNext(); }
-
-    __currentObjectUrl = url;
-    __currentUrlEphemeral = ssTransientMode;
-
-    const img = document.createElement('img');
-    img.className = 'ssImg';
-    img.onload = ()=>{
-      placeAndKenBurns(img);
-      crossfade();
-      setTimeout(()=>{ ssIndex++; showNext(); }, dur * 1000);
-    };
-    img.onerror = ()=>{ ssIndex++; showNext(); };
-    img.src = url;
-    layer.appendChild(img);
-    return;
+  layer.innerHTML='';
+  // 直前のURLを解放
+try{
+  if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(__currentObjectUrl);
   }
+}catch{}
+__currentObjectUrl = null;
 
-  // 動画（その他は動画として扱う）
+// URLをその場で生成
+const makeUrlForIndex = (idx)=>{
+  if (ssTransientMode) {
+    const f = ssPickedFiles[idx % ssPickedFiles.length];
+    if (!f) return null;
+    return URL.createObjectURL(f);
+  } else {
+    return ssFilesArr[idx % ssFilesArr.length].url || null;
+  }
+};
+
+if (item.type==='image'){
   const url = makeUrlForIndex(ssIndex);
   if (!url){ ssIndex++; return showNext(); }
-
   __currentObjectUrl = url;
-  __currentUrlEphemeral = ssTransientMode;
+
+  const img = document.createElement('img');
+  img.src = url; img.className='ssImg';
+  layer.appendChild(img);
+  placeAndKenBurns(img);
+  crossfade();
+  setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+}else{
+  const url = makeUrlForIndex(ssIndex);
+  if (!url){ ssIndex++; return showNext(); }
+  __currentObjectUrl = url;
 
   const vd = document.createElement('video');
-  vd.className = 'ssVid';
-  vd.autoplay = true;
-  vd.loop = false;
-  vd.muted = true;
-  vd.playsInline = true;
-  vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); }, { once:true });
-  vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, { once:true });
-  vd.addEventListener('error', ()=>{ ssIndex++; showNext(); }, { once:true });
-  vd.src = url;
+  vd.src=url; vd.className='ssVid'; vd.autoplay=true; vd.loop=false; vd.muted=true; vd.playsInline=true;
+  vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, {once:true});
+  vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
   layer.appendChild(vd);
+}
 }
 function crossfade(){
   const show = ssShowingA ? ssLayerB : ssLayerA;
@@ -1644,40 +1563,20 @@ function closeBgmPicker(){
 }
 
 $('bgmCancel').addEventListener('click', closeBgmPicker);
-$('bgmOk').addEventListener('click', async ()=>{
-  const tbody = $('bgmTbody');
-  const picks = Array.from(tbody.querySelectorAll('input.pick:checked'));
-  if (picks.length === 0) {
-    ssBgmList = [];
-    saveSsSettingsUI();
-    closeBgmPicker();
-    updateBgmNow();
-    alert('BGMの選択を解除しました');
-    return;
-  }
-
-  // id → url を解決して配列化
-  const list = [];
-  for (const cb of picks) {
-    const id = cb.dataset.id;
-    const title = cb.dataset.title || '';
-    try{
-      const url = await getPlayableUrlFromBgmApp(id);
-      if (url) list.push({ id, title, url });
-    }catch{}
-  }
-  ssBgmList = list;
+$('bgmOk').addEventListener('click', ()=>{
+  if(!__bgmPicked){ alert('BGMを選択してください。'); return; }
+  ssBgmUrl = __bgmPicked.url;
+  ssBgmTitle = __bgmPicked.title || '';
   saveSsSettingsUI();
   closeBgmPicker();
-  updateBgmNow();
-  alert(`${ssBgmList.length}曲を設定しました`);
+  alert('BGMを設定しました');
 });
 
 $('bgmReload').addEventListener('click', loadBgmList);
 
 async function loadBgmList(){
   const tbody = $('bgmTbody');
-  tbody.innerHTML = `<tr><td colspan="4" class="center muted">読み込み中…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="5" class="center muted">読み込み中…</td></tr>`;
   try{
     const r = await fetch(`${BGM_FN_BASE}/list`, { mode:'cors', credentials:'omit' });
     const js = await r.json();
@@ -1705,9 +1604,6 @@ async function loadBgmList(){
       const tr = document.createElement('tr');
       tr.className = 'pick-row';
       tr.innerHTML = `
-  <td class="center">
-    <input type="checkbox" class="pick" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}" />
-  </td>
   <td class="title">${escapeHtml(it.title)}</td>
   <td class="right cell-dur">—</td>
   <td class="center">
