@@ -1457,7 +1457,11 @@ function showNext(){
   if (len===0){ stopSlideShow(); return; }
   const idx = ssIndex % len;
   // transient時は実ファイル配列からtypeを取る（ssFilesArrは型だけのダミーを持つため）
-  const item = ssTransientMode ? { type: (ssPickedFiles[idx]?.type || '') } : ssFilesArr[idx];
+  const f = ssPickedFiles[idx];
+const isImage = f ? ((f.type || '').startsWith('image')
+  || /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(f.name || '')) : false;
+// transient時は type が空でも拡張子で画像判定する
+const item = ssTransientMode ? { type: isImage ? 'image/any' : (f?.type || '') } : ssFilesArr[idx];
   const dur = Math.max(3, window.__ssDurationSec||10);
   const layer = ssShowingA ? ssLayerB : ssLayerA; // 次に出すレイヤ
   layer.innerHTML='';
