@@ -491,13 +491,14 @@
       <table>
         <thead>
   <tr>
+    <th style="width:60px" class="center">選択</th>
     <th>Title</th>
     <th style="width:120px" class="right">DURATION</th>
     <th style="width:120px" class="center">操作</th>
   </tr>
 </thead>
         <tbody id="bgmTbody">
-  <tr><td colspan="3" class="center muted">読み込み中…</td></tr>
+  <tr><td colspan="4" class="center muted">読み込み中…</td></tr>
 </tbody>
       </table>
     </div>
@@ -519,7 +520,7 @@
 const BGM_API_BASE = 'https://superlative-bienenstitch-e300de.netlify.app/.netlify/functions';
 /* ===== 固定：BGM管理アプリ Functions ベースURL ===== */
 const BGM_SITE   = 'https://superlative-bienenstitch-e300de.netlify.app';
-const BGM_FN_BASE = `${BGM_SITE}/.netlify/functions`;
+const BGM_FN_BASE = ${BGM_SITE}/.netlify/functions;
 
 /* ===== 共通キー・ユーティリティ ===== */
 const KEY_LAYOUT='studyroom-layout-v7', KEY_NAME='studyroom-name-v7', KEY_UNLOCK='unlock-pw';
@@ -532,8 +533,8 @@ function show(id){
   $(id).classList.remove('hidden');
 }
 function fmt2(n){ return String(n).padStart(2,'0'); }
-function toDateStr(d){ return `${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}`; }
-function toDisp(d){ return `${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())} ${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`; }
+function toDateStr(d){ return ${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}; }
+function toDisp(d){ return ${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())} ${fmt2(d.getHours())}:${fmt2(d.getMinutes())}; }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 /* ===== 画面遷移 ===== */
@@ -587,8 +588,8 @@ function generateReport(){
   let lines = ['利用ID,入室時刻,退出時刻'];
   for(const r of hist){
     const inStr  = r.inAt ? toDisp(new Date(r.inAt)) : '';
-    const outStr = r.outAt ? `${toDisp(new Date(r.outAt))}${r.outMarked?'★':''}` : '';
-    lines.push([`${r.uid||''}`,`${inStr}`,`${outStr}`].join(','));
+    const outStr = r.outAt ? ${toDisp(new Date(r.outAt))}${r.outMarked?'★':''} : '';
+    lines.push([${r.uid||''},${inStr},${outStr}].join(','));
   }
   const csvBody = lines.join('\r\n');
 
@@ -597,15 +598,15 @@ function generateReport(){
   const blob = new Blob([bom + csvBody], {type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${pick.replaceAll('-','')}_利用履歴.csv`;
+  a.download = ${pick.replaceAll('-','')}_利用履歴.csv;
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
 
   // メール下書き（mailto）を開く
-  const subject = encodeURIComponent(`利用履歴CSV ${pick}`);
+  const subject = encodeURIComponent(利用履歴CSV ${pick});
   const body    = encodeURIComponent(csvBody);
-  location.href = `mailto:k_hayashi@sozogakuen.co.jp?subject=${subject}&body=${body}`;
+  location.href = mailto:k_hayashi@sozogakuen.co.jp?subject=${subject}&body=${body};
 }
 
 /* ロック解除PW保存（メイン） */
@@ -696,8 +697,8 @@ $('saveBtn').addEventListener('click', ()=>{
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const a=document.createElement('a'); const base = (editor.nameEl.value||data.name||'layout').trim();
   const now=new Date();
-  const ts=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
-  a.download=`${base}_${ts}.json`; a.href=URL.createObjectURL(blob); a.click();
+  const ts=${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')};
+  a.download=${base}_${ts}.json; a.href=URL.createObjectURL(blob); a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),0);
 });
 $('openBtn').addEventListener('click', ()=> $('fileOpen').click());
@@ -750,8 +751,8 @@ function renderRun(){
   if(!g){ liveGrid.innerHTML='<div style="opacity:.7">レイアウトが見つかりません（レイアウト作成で保存してください）</div>'; return; }
   const {minX,minY,maxX,maxY}=computeCroppedArea(g);
   const cols=maxX-minX+1, rows=maxY-minY+1;
-  liveGrid.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
-  liveGrid.style.gridTemplateRows = `repeat(${rows}, var(--cell))`;
+  liveGrid.style.gridTemplateColumns = repeat(${cols}, var(--cell));
+  liveGrid.style.gridTemplateRows = repeat(${rows}, var(--cell));
   liveGrid.innerHTML='';
   for(let y=minY;y<=maxY;y++){
     for(let x=minX;x<=maxX;x++){
@@ -780,8 +781,8 @@ window.addEventListener('resize', ()=>{
 const dateEl=$('dateText'), timeEl=$('timeText');
 function updateClock(){
   const d=new Date(), wk=['日','月','火','水','木','金','土'][d.getDay()];
-  dateEl.textContent=`${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())}（${wk}）`;
-  timeEl.textContent=`${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`;
+  dateEl.textContent=${d.getFullYear()}/${fmt2(d.getMonth()+1)}/${fmt2(d.getDate())}（${wk}）;
+  timeEl.textContent=${fmt2(d.getHours())}:${fmt2(d.getMinutes())};
 }
 updateClock(); setInterval(updateClock, 30000);
 
@@ -811,7 +812,7 @@ function openSeatOps(seatNo){
   const entry = seatState[seatNo];
   if (isBusyEntry(entry)) {
     const uid = (entry && entry.uid) ? entry.uid : '不明';
-    seatOpsUsage.textContent = `使用中（${uid}）`;
+    seatOpsUsage.textContent = 使用中（${uid}）;
   } else {
     seatOpsUsage.textContent = '';
   }
@@ -845,7 +846,7 @@ opsOk.addEventListener('click', ()=>{
     pushLog({
       uid,
       action: 'move',
-      seatNo: `${from}->${to}`,
+      seatNo: ${from}->${to},
       method: 'admin',
       roomPrefix: uid ? String(uid).slice(0,3) : '',
       star: false
@@ -976,7 +977,7 @@ function openConfirmWithValue(v){
   }
 
   lastScannedValue = v;
-  confirmMsgEl.textContent = (scanMode==='enter') ? `${v}　利用を開始しますか？` : `${v}　利用を終了しますか？`;
+  confirmMsgEl.textContent = (scanMode==='enter') ? ${v}　利用を開始しますか？ : ${v}　利用を終了しますか？;
   confirmDlg.style.display='flex';
 }
 
@@ -998,7 +999,7 @@ $('assignOk').addEventListener('click', ()=>{
   gotoRun();
 });
 function openAssignWithSeat(seatNo){
-  assignMsg.textContent = `No.${seatNo} の座席を利用してください。`;
+  assignMsg.textContent = No.${seatNo} の座席を利用してください。;
   assignDlg.style.display='flex';
 }
 
@@ -1177,11 +1178,15 @@ let ssPickedFiles = [];
 let __currentObjectUrl = null;
 let ssEnabledFlag = false;
 let ssFilesArr = []; // {type:'image'|'video', url:objectURL}
-let ssBgmUrl = '';
-let ssBgmTitle = '';
+// 複数曲対応：選択された曲の配列 [{id,title,url}]
+let ssBgmList = [];
 let ssAudio = null;
+let __bgmIndex = -1; // 直前に再生したインデックス（連続同一回避用）
 const ssOverlay = $('ssOverlay'), ssLayerA=$('ssLayerA'), ssLayerB=$('ssLayerB');
 let ssIndex=0, ssShowingA=true, ssRunning=false;
+
+// 追加：現在選択されているメディア数を返す（iPad一時再生対応）
+function mediaCount(){ return ssTransientMode ? ssPickedFiles.length : ssFilesArr.length; }
 
 function loadSsSettings(){
   try{
@@ -1189,8 +1194,7 @@ function loadSsSettings(){
     ssEnabledFlag = !!s.enabled;
     ssIdleMs = Math.max(1000, (s.idleMin||10)*60000);
     window.__ssDurationSec = Math.max(3, s.durationSec||10);
-    ssBgmUrl = s.bgmUrl||'';
-    ssBgmTitle = s.bgmTitle||'';
+    ssBgmList = Array.isArray(s.bgmList) ? s.bgmList : [];
     const media = JSON.parse(localStorage.getItem(SS_MEDIA_KEY)||'[]');
     ssFilesArr = media;
   }catch{
@@ -1204,11 +1208,13 @@ function saveSsSettingsUI(){
     enabled: $('ssEnabled').checked,
     idleMin: Number($('ssIdleMin').value || 10),
     durationSec: dur,
-    bgmUrl: ssBgmUrl || '',
-    bgmTitle: ssBgmTitle || '',
+    bgmList: Array.isArray(ssBgmList) ? ssBgmList : [],
   };
   localStorage.setItem(SS_KEY, JSON.stringify(s));
   window.__ssDurationSec = dur; // ← ここがポイント：すぐに startSlideShow が新秒数を使う
+  // 追加：グローバルの即時反映
+  ssEnabledFlag = s.enabled;
+  ssIdleMs = Math.max(1000, s.idleMin * 60000);
   updateBgmNow();
 }
 function loadSsSettingsUI(){
@@ -1220,7 +1226,13 @@ function loadSsSettingsUI(){
 }
 function updateBgmNow(){
   const el=$('bgmNow');
-  el.textContent = ssBgmUrl ? (ssBgmTitle || '(タイトルなし)') : '（未選択）';
+  if (!ssBgmList || ssBgmList.length===0) {
+    el.textContent = '（未選択）';
+  } else if (ssBgmList.length===1) {
+    el.textContent = ssBgmList[0].title || '(タイトルなし)';
+  } else {
+    el.textContent = ${ssBgmList.length}曲選択中;
+  }
 }
 $('btnSsBack').addEventListener('click', gotoMain);
 $('btnSsSave').addEventListener('click', ()=>{
@@ -1229,8 +1241,12 @@ $('btnSsSave').addEventListener('click', ()=>{
   resetIdleTimer();
 });
 $('btnSsTest').addEventListener('click', ()=>{
-  saveSsSettingsUI();
-  startSlideShow();
+  saveSsSettingsUI(); // ↑で ssEnabledFlag / ssIdleMs も即時反映
+  if (ssFilesArr.length === 0 && ssPickedFiles.length === 0){
+    alert('写真・動画が選択されていません');
+    return;
+  }
+  startSlideShow(true); // 強制起動
 });
 
 /* メディア選択 */
@@ -1268,6 +1284,8 @@ $('ssFiles').addEventListener('change', async (e)=>{
   }
 });
 $('clearMedia').addEventListener('click', ()=>{
+  // 実行中ならまず停止してレイヤも隠す
+  stopSlideShow();
   // 再生中URLを解放
   try{
     if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
@@ -1304,8 +1322,9 @@ $('clearMedia').addEventListener('click', ()=>{
 /* BGM 選択 */
 $('btnPickBgm').addEventListener('click', openBgmPicker);
 $('clearBgm').addEventListener('click', ()=>{
-  ssBgmUrl=''; ssBgmTitle='';
+  ssBgmList = [];
   saveSsSettingsUI();
+  updateBgmNow();
 });
 
 /* 画像ダウンスケール */
@@ -1335,14 +1354,14 @@ __gestureEvents.forEach(ev=>{
 function resetIdleTimer(){
   if (ssTimer) clearTimeout(ssTimer);
   loadSsSettings();
-  if (!ssEnabledFlag || ssFilesArr.length===0){ stopSlideShow(); return; }
+  if (!ssEnabledFlag || mediaCount()===0){ stopSlideShow(); return; }
   ssTimer = setTimeout(startSlideShow, ssIdleMs);
 }
 
 /* iOS対策：ユーザー操作中にBGMを一度だけ無音再生→停止して“解錠” */
 function primeBgmFromGesture(){
   try{
-    if(!ssBgmUrl) return;
+    if(!ssBgmList || ssBgmList.length===0) return;
     if(!ssAudio){
       ssAudio = new Audio();
       ssAudio.crossOrigin = 'anonymous';
@@ -1351,7 +1370,7 @@ function primeBgmFromGesture(){
     if (ssAudio.__primed) return;
 
     ssAudio.muted = true;
-    if (!ssAudio.src) ssAudio.src = ssBgmUrl;
+    if (!ssAudio.src) ssAudio.src = ssBgmList[0].url; // 適当に先頭曲を使って“解錠”
     ssAudio.play().then(()=>{
       // すぐ停止＆元に戻す（“再生可能な状態”だけ獲得）
       ssAudio.pause();
@@ -1361,27 +1380,59 @@ function primeBgmFromGesture(){
     }).catch(()=>{ /* 失敗しても次の操作でまた試す */ });
   }catch{}
 }
-function startSlideShow(){
-  if (!ssEnabledFlag || ssFilesArr.length===0) return;
+function startSlideShow(force=false){
+  if (!force && (!ssEnabledFlag || ssFilesArr.length===0)) return;
+
+  // ★ 前回の残りを完全クリア
+  try{
+    if (__currentObjectUrl && __currentObjectUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(__currentObjectUrl);
+    }
+  }catch{}
+  __currentObjectUrl = null;
+  ssLayerA.innerHTML = '';
+  ssLayerB.innerHTML = '';
+  ssLayerA.classList.remove('show');
+  ssLayerB.classList.remove('show');
+
   ssRunning = true;
-  ssIndex = 0; ssShowingA = true;
+  ssIndex = 0;
+  ssShowingA = true;
   ssOverlay.style.display='flex';
-  // BGM（ループ）— primed Audio を再利用して確実に鳴らす
-  if (ssBgmUrl){
+
+  // BGM（複数曲：ランダム連続再生）
+  if (ssBgmList && ssBgmList.length > 0) {
     if (!ssAudio){
       ssAudio = new Audio();
       ssAudio.crossOrigin = 'anonymous';
-      ssAudio.loop = true;
+      ssAudio.loop = false; // 曲ごとに切替
+      ssAudio.addEventListener('ended', ()=>{ playRandomBgm(); });
     }
-    // URL更新（テスト→本番切替直後でも確実に最新に）
-    if (ssAudio.src !== ssBgmUrl) ssAudio.src = ssBgmUrl;
-
     try{ ssAudio.pause(); }catch{}
     ssAudio.muted = false;
     ssAudio.volume = 1;
-    ssAudio.play().catch(()=>{ /* 念のため握りつぶし（iOS挙動差）*/ });
+    playRandomBgm(); // 最初の1曲を流す
   }
   showNext();
+}
+function playRandomBgm(){
+  if (!ssBgmList || ssBgmList.length===0 || !ssAudio) return;
+  // 直前と同じ曲にならないようにする（1曲しかない場合はそのまま）
+  let idx;
+  if (ssBgmList.length === 1) {
+    idx = 0;
+  } else {
+    do {
+      idx = Math.floor(Math.random() * ssBgmList.length);
+    } while (idx === __bgmIndex);
+  }
+  __bgmIndex = idx;
+  const sel = ssBgmList[idx];
+  if (!sel || !sel.url) return;
+  try{ ssAudio.pause(); }catch{}
+  ssAudio.src = sel.url;
+  ssAudio.currentTime = 0;
+  ssAudio.play().catch(()=>{ /* iOS挙動差で失敗しても次に再試行 */ });
 }
 function stopSlideShow(){
   if (!ssRunning) return;
@@ -1402,7 +1453,11 @@ function stopSlideShow(){
 ssOverlay.addEventListener('click', ()=>{ stopSlideShow(); resetIdleTimer(); });
 function showNext(){
   if (!ssRunning) return;
-  const item = ssFilesArr[ssIndex % ssFilesArr.length];
+  const len = mediaCount();
+  if (len===0){ stopSlideShow(); return; }
+  const idx = ssIndex % len;
+  // transient時は実ファイル配列からtypeを取る（ssFilesArrは型だけのダミーを持つため）
+  const item = ssTransientMode ? { type: (ssPickedFiles[idx]?.type || '') } : ssFilesArr[idx];
   const dur = Math.max(3, window.__ssDurationSec||10);
   const layer = ssShowingA ? ssLayerB : ssLayerA; // 次に出すレイヤ
   layer.innerHTML='';
@@ -1425,7 +1480,7 @@ const makeUrlForIndex = (idx)=>{
   }
 };
 
-if (item.type==='image'){
+if ((item.type||'').startsWith('image')){
   const url = makeUrlForIndex(ssIndex);
   if (!url){ ssIndex++; return showNext(); }
   __currentObjectUrl = url;
@@ -1462,8 +1517,8 @@ function placeAndKenBurns(img){
   img.style.transformOrigin='center center';
   img.style.transform='translate(-50%,-50%) scale(1)';
   img.animate([
-    { transform:`translate(-50%,-50%) scale(${startScale}) translate(0px,0px)` },
-    { transform:`translate(-50%,-50%) scale(${endScale}) translate(${dx}px,${dy}px)` }
+    { transform:translate(-50%,-50%) scale(${startScale}) translate(0px,0px) },
+    { transform:translate(-50%,-50%) scale(${endScale}) translate(${dx}px,${dy}px) }
   ], { duration: Math.max(3000, (window.__ssDurationSec||10)*1000), easing:'ease-in-out', fill:'forwards' });
 }
 
@@ -1484,7 +1539,7 @@ function fmtDate(any){
       const d = new Date(ms);
       if(isNaN(d)) return '—';
       const p=n=>String(n).padStart(2,'0');
-      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+      return ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())};
     }
     // 文字列: 数字のみなら parseInt、その他は Date に委譲
     const s = String(any).trim();
@@ -1494,12 +1549,12 @@ function fmtDate(any){
       const d = new Date(ms);
       if(isNaN(d)) return '—';
       const p=n=>String(n).padStart(2,'0');
-      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+      return ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())};
     }
     const d = new Date(s);
     if(isNaN(d)) return '—';
     const p=n=>String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())};
   }catch{ return '—'; }
 }
 
@@ -1513,14 +1568,14 @@ function fmtDuration(v){
     const m = Math.floor((s%3600)/60);
     const ss = Math.floor(s%60);
     const z = n => String(n).padStart(2,'0');
-    return h>0 ? `${h}:${z(m)}:${z(ss)}` : `${m}:${z(ss)}`;
+    return h>0 ? ${h}:${z(m)}:${z(ss)} : ${m}:${z(ss)};
   }else{
     const s = String(v).trim();
     if(/^\d+$/.test(s)){  // 純数字: 秒とみなす
       return fmtDuration(parseInt(s,10));
     }
     if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)){ // "m:ss" or "h:mm:ss"
-      return s.length===4 ? `0:${s}` : s; // 念の為ゼロ詰め
+      return s.length===4 ? 0:${s} : s; // 念の為ゼロ詰め
     }
     return '—';
   }
@@ -1530,11 +1585,11 @@ async function getPlayableUrlFromBgmApp(id){
   const ensureAbs = (u)=>{
     if(!u) return '';
     if(/^https?:\/\//i.test(u)) return u;           // 既に絶対URL
-    if(u.startsWith('/')) return `${BGM_SITE}${u}`; // /audio/... はサイト直下を指す
-    return `${BGM_SITE}/${u}`;
+    if(u.startsWith('/')) return ${BGM_SITE}${u}; // /audio/... はサイト直下を指す
+    return ${BGM_SITE}/${u};
   };
   try{
-    const r = await fetch(`${BGM_FN_BASE}/geturl?id=${encodeURIComponent(id)}`, { mode:'cors', credentials:'omit' });
+    const r = await fetch(${BGM_FN_BASE}/geturl?id=${encodeURIComponent(id)}, { mode:'cors', credentials:'omit' });
     if(r.ok){
       const js = await r.json().catch(()=>null);
       const u = (js && (js.url || js.path)) ? (js.url || js.path) : '';
@@ -1542,7 +1597,7 @@ async function getPlayableUrlFromBgmApp(id){
     }
   }catch{}
   // フォールバックは Functions の download → そこから最終URLへリダイレクトされる想定
-  return `${BGM_FN_BASE}/download?id=${encodeURIComponent(id)}`;
+  return ${BGM_FN_BASE}/download?id=${encodeURIComponent(id)};
 }
 
 let __bgmPicked = null; // {id,title,url}
@@ -1563,22 +1618,42 @@ function closeBgmPicker(){
 }
 
 $('bgmCancel').addEventListener('click', closeBgmPicker);
-$('bgmOk').addEventListener('click', ()=>{
-  if(!__bgmPicked){ alert('BGMを選択してください。'); return; }
-  ssBgmUrl = __bgmPicked.url;
-  ssBgmTitle = __bgmPicked.title || '';
+$('bgmOk').addEventListener('click', async ()=>{
+  const tbody = $('bgmTbody');
+  const picks = Array.from(tbody.querySelectorAll('input.pick:checked'));
+  if (picks.length === 0) {
+    ssBgmList = [];
+    saveSsSettingsUI();
+    closeBgmPicker();
+    updateBgmNow();
+    alert('BGMの選択を解除しました');
+    return;
+  }
+
+  // id → url を解決して配列化
+  const list = [];
+  for (const cb of picks) {
+    const id = cb.dataset.id;
+    const title = cb.dataset.title || '';
+    try{
+      const url = await getPlayableUrlFromBgmApp(id);
+      if (url) list.push({ id, title, url });
+    }catch{}
+  }
+  ssBgmList = list;
   saveSsSettingsUI();
   closeBgmPicker();
-  alert('BGMを設定しました');
+  updateBgmNow();
+  alert(${ssBgmList.length}曲を設定しました);
 });
 
 $('bgmReload').addEventListener('click', loadBgmList);
 
 async function loadBgmList(){
   const tbody = $('bgmTbody');
-  tbody.innerHTML = `<tr><td colspan="5" class="center muted">読み込み中…</td></tr>`;
+  tbody.innerHTML = <tr><td colspan="4" class="center muted">読み込み中…</td></tr>;
   try{
-    const r = await fetch(`${BGM_FN_BASE}/list`, { mode:'cors', credentials:'omit' });
+    const r = await fetch(${BGM_FN_BASE}/list, { mode:'cors', credentials:'omit' });
     const js = await r.json();
 
     if(!(js && (Array.isArray(js.items) || Array.isArray(js.data)))) {
@@ -1594,7 +1669,7 @@ async function loadBgmList(){
 })).filter(it => !!it.id);
 
     if(items.length===0){
-      tbody.innerHTML = `<tr><td colspan="5" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>`;
+      tbody.innerHTML = <tr><td colspan="5" class="center muted">ファイルはありません（BGM管理アプリでアップロードしてください）</td></tr>;
       return;
     }
 
@@ -1603,13 +1678,16 @@ async function loadBgmList(){
     items.forEach(it=>{
       const tr = document.createElement('tr');
       tr.className = 'pick-row';
-      tr.innerHTML = `
+      tr.innerHTML = 
+  <td class="center">
+    <input type="checkbox" class="pick" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}" />
+  </td>
   <td class="title">${escapeHtml(it.title)}</td>
   <td class="right cell-dur">—</td>
   <td class="center">
     <button class="btn btn-preview" data-id="${escapeHtml(it.id)}" data-title="${escapeHtml(it.title)}">試聴</button>
   </td>
-`;
+;
       // 先にサーバが出しているフィールドがあれば反映
       if (it.durationSec) tr.querySelector('.cell-dur').textContent = fmtDuration(it.durationSec);
 
@@ -1639,7 +1717,7 @@ async function loadBgmList(){
     }
 
   }catch(err){
-    tbody.innerHTML = `<tr><td colspan="5" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>`;
+    tbody.innerHTML = <tr><td colspan="5" class="center" style="color:#ff6b6b">取得失敗：${escapeHtml(err?.message||String(err))}</td></tr>;
   }
 }
 document.addEventListener('click', async (ev)=>{
@@ -1700,7 +1778,7 @@ async function previewAndPick(it){
     // ユーザー操作起因なので play は許可されるはず
     await a.play();
     __bgmPicked = { id: it.id, title: it.title || '', url };
-    msg.textContent = `選択中：${it.title || '(タイトルなし)'}`;
+    msg.textContent = 選択中：${it.title || '(タイトルなし)'};
   }catch(e){
     msg.textContent = '再生に失敗しました';
   }
