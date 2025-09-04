@@ -1254,7 +1254,8 @@ $('btnSsTest').addEventListener('click', ()=>{
 
 /* メディア選択 */
 $('ssFiles').addEventListener('change', async (e)=>{
-  const files = Array.from(e.target.files||[]);
+  // 0バイトを除外
+  const files = Array.from(e.target.files || []).filter(f => f && f.size > 0);
 
   // 再生中URLを解放
   try{
@@ -1265,9 +1266,13 @@ $('ssFiles').addEventListener('change', async (e)=>{
   __currentObjectUrl = null;
 
   if (ssTransientMode) {
-    // iPad: 保存せずに直接再生
+    // iPad: 保存せずに直接再生（type未設定対策で拡張子でも画像判定）
     ssPickedFiles = files;
-    ssFilesArr = files.map(f => ({ type: f.type.startsWith('image/') ? 'image' : 'video' }));
+    ssFilesArr = files.map(f => ({
+      type: (/^image\//.test(f.type) || /\.(jpe?g|png|gif|webp|bmp|heic|heif|avif)$/i.test(f.name || ''))
+        ? 'image'
+        : 'video'
+    }));
   } else {
     // 従来: ダウンサンプル＋保存
     const list = [];
@@ -1488,34 +1493,46 @@ const makeUrlForIndex = (idx)=>{
 };
 
 if ((item.type||'').startsWith('image')){
-  let url = makeUrlForIndex(ssIndex);
+  const url = makeUrlForIndex(ssIndex);
+  if (!url){ ssIndex++; return showNext(); }
+  __currentObjectUrl = url;
 
-// ★空要素をスキップして次へ
-let guard = 0;
-while(!url && guard < mediaCount()){
-  ssIndex++;
-  url = makeUrlForIndex(ssIndex);
-  guard++;
-}
-if (!url){ stopSlideShow(); return; }
+  const layer = ssShowingA ? ssLayerB : ssLayerA;
+  layer.innerHTML = '';
 
-__currentObjectUrl = url;
-
-  const img = document.createElement('img');
-  img.src = url; img.className='ssImg';
-  layer.appendChild(img);
-  placeAndKenBurns(img);
-  crossfade();
-  setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+  const img = new Image();
+  img.className = 'ssImg';
+  img.onload = ()=>{
+    layer.appendChild(img);
+    placeAndKenBurns(img);
+    crossfade();
+    setTimeout(()=>{ ssIndex++; showNext(); }, dur*1000);
+  };
+  img.onerror = ()=>{
+    try{ if(url.startsWith('blob:')) URL.revokeObjectURL(url); }catch{}
+    ssIndex++; showNext(); // 読めない画像は即スキップ
+  };
+  img.src = url;
 }else{
   const url = makeUrlForIndex(ssIndex);
   if (!url){ ssIndex++; return showNext(); }
   __currentObjectUrl = url;
 
+  const layer = ssShowingA ? ssLayerB : ssLayerA;
+  layer.innerHTML = '';
+
   const vd = document.createElement('video');
-  vd.src=url; vd.className='ssVid'; vd.autoplay=true; vd.loop=false; vd.muted=true; vd.playsInline=true;
-  vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, {once:true});
+  vd.src = url;
+  vd.className = 'ssVid';
+  vd.autoplay = true;
+  vd.loop = false;
+  vd.muted = true;
+  vd.playsInline = true;
+
   vd.addEventListener('loadeddata', ()=>{ crossfade(); vd.play().catch(()=>{}); });
+  vd.addEventListener('ended', ()=>{ ssIndex++; showNext(); }, { once:true });
+  vd.addEventListener('error', ()=>{ ssIndex++; showNext(); }, { once:true }); // 追加：読めない動画はスキップ
+
   layer.appendChild(vd);
 }
 }
