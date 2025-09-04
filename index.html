@@ -1568,29 +1568,36 @@ function showNext(first=false){
   __currentObjectUrl = url;
 
   if (isImage){
-    const img = document.createElement('img');
-    img.className = 'ssImg';
-    img.addEventListener('load', ()=>{
-      if (!ssRunning) return;
-      if (first) ssOverlay.style.display='flex';
+  const img = document.createElement('img');
+  img.className = 'ssImg';
 
-      layer.appendChild(img);
-      placeAndKenBurns(img);
-      crossfade();
+  const advance = ()=>{
+    if (ssNextTid){ clearTimeout(ssNextTid); ssNextTid = null; }
+    if (!ssRunning) return;
+    ssIndex++;
+    showNext(false);
+  };
 
-      if (prevUrl && prevUrl.startsWith('blob:')) { try{ URL.revokeObjectURL(prevUrl); }catch{} }
+  img.addEventListener('load', ()=>{
+    if (!ssRunning) return;
+    if (first) ssOverlay.style.display='flex';
 
-      if (ssNextTid){ clearTimeout(ssNextTid); }
-      ssNextTid = setTimeout(()=>{
-        ssNextTid = null;
-        if (!ssRunning) return;
-        ssIndex++;
-        showNext(false);
-      }, dur*1000);
-    }, { once:true });
-    img.src = url;
+    layer.appendChild(img);
+    placeAndKenBurns(img);
+    crossfade();
 
-  } else {
+    // revoke はしない：次周回で同じ blob URL を再利用するため
+
+    if (ssNextTid){ clearTimeout(ssNextTid); }
+    ssNextTid = setTimeout(()=>{ ssNextTid = null; advance(); }, dur*1000);
+  }, { once:true });
+
+  // 読み込み失敗でも止まらず次へ
+  img.addEventListener('error', advance, { once:true });
+
+  img.src = url;
+
+} else {
     const vd = document.createElement('video');
     vd.src = url;
     vd.className = 'ssVid';
@@ -1614,7 +1621,7 @@ function showNext(first=false){
       crossfade();
       vd.play().catch(()=>{});
 
-      if (prevUrl && prevUrl.startsWith('blob:')) { try{ URL.revokeObjectURL(prevUrl);}catch{} }
+    
 
       // ここから保険いろいろ
       vd.addEventListener('ended',   advance, { once:true });
