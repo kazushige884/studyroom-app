@@ -204,8 +204,9 @@
   .ssLayer{position:absolute;inset:0;opacity:0;transition:opacity 1200ms ease}
   .ssLayer.show{opacity:1}
   .ssImg, .ssVid{position:absolute;top:50%;left:50%;transform-origin:center center;will-change:transform,opacity}
-  .ssVid{width:100vw;height:100vh;object-fit:cover;transform:translate(-50%,-50%)}
-  .ssImg{width:100vw;height:100vh;object-fit:cover}
+  /* 動画も常に画面内に収める（はみ出さない） */
+.ssVid{width:100vw;height:100vh;object-fit:contain;transform:translate(-50%,-50%)}
+  .ssImg{width:100vw;height:100vh;object-fit:contain;transform:translate(-50%,-50%)}
 
   /* レスポンシブ */
   @media (max-width:980px){
@@ -1641,7 +1642,7 @@ function crossfade(){
   ssShowingA = !ssShowingA;
 }
 function placeAndKenBurns(img){
-  const startScale = 1.05, endScale = 1.15;
+  const startScale = 1.00, endScale = 1.08;
   const dx = (Math.random()<0.5? -1:1) * 20;
   const dy = (Math.random()<0.5? -1:1) * 12;
   img.style.transformOrigin='center center';
