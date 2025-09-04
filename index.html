@@ -1575,7 +1575,7 @@ function fmtDuration(v){
     const m = Math.floor((s%3600)/60);
     const ss = Math.floor(s%60);
     const z = n => String(n).padStart(2,'0');
-    return h>0 ? ${h}:${z(m)}:${z(ss)} : ${m}:${z(ss)};
+    return h>0 ? `${h}:${z(m)}:${z(ss)}` : `${m}:${z(ss)}`;
   }else{
     const s = String(v).trim();
     if(/^\d+$/.test(s)){  // 純数字: 秒とみなす
