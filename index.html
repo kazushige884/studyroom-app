@@ -1605,7 +1605,7 @@ async function getPlayableUrlFromBgmApp(id){
   }catch{}
   // フォールバックは Functions の download → そこから最終URLへリダイレクトされる想定
   return `${BGM_FN_BASE}/download?id=${encodeURIComponent(id)}`;
-
+}
 let __bgmPicked = null; // {id,title,url}
 
 function openBgmPicker(){
