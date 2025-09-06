@@ -589,7 +589,8 @@ function generateReport(){
   let lines = ['利用ID,入室時刻,退出時刻'];
   for(const r of hist){
     const inStr  = r.inAt ? toDisp(new Date(r.inAt)) : '';
-    const outStr = r.outAt ? `${toDisp(new Date(r.outAt))}${r.outMarked?'★':''}` : '';
+    const mark = r.outMarked ? '★' : (r.outAuto ? '＊' : '');
+const outStr = r.outAt ? `${toDisp(new Date(r.outAt))}${mark}` : '';
     lines.push([r.uid||'', inStr, outStr].join(','));
   }
   const csvBody = lines.join('\r\n');
@@ -609,7 +610,48 @@ function generateReport(){
 const body    = encodeURIComponent(csvBody);
 location.href = `mailto:k_hayashi@sozogakuen.co.jp?subject=${subject}&body=${body}`;
 }
+// 指定日の 23:59:00（ローカル）を返す
+function endOfDayLocal(d0){
+  const d = new Date(d0);
+  d.setHours(23,59,0,0);
+  return d;
+}
 
+// 日付を跨いだ入室中のIDを「在室していた日」の 23:59:00 で自動退室（＊）にする
+function autoCloseOvernights(){
+  const todayStr = toDateStr(new Date()); // 'YYYY-MM-DD'
+  let changed = false;
+
+  for (const [no, e] of Object.entries(seatState)){
+    if (!e || !e.busy) continue;
+    const uid = e.uid ? String(e.uid) : '';
+    if (!uid) continue;
+
+    const inAt = e.inAt ? new Date(e.inAt) : null;
+    if (!inAt) continue;
+
+    const inDayStr = toDateStr(inAt);
+    // 在室日 < 本日 なら、その在室日の 23:59:00 で締める
+    if (inDayStr < todayStr){
+      const leaveAt = endOfDayLocal(inAt);
+      // 履歴：＊
+      addHistoryOnAutoLeave(uid, leaveAt);
+      // ログ送信：＊（payload.star に '＊' を渡す）
+      pushLog({
+        uid,
+        action: 'leave',
+        seatNo: String(no),
+        method: 'auto',
+        roomPrefix: uid.slice(0,3),
+        star: '＊'
+      });
+      // 状態オフ
+      seatState[no] = false;
+      changed = true;
+    }
+  }
+  if (changed) saveSeatState();
+}
 /* ロック解除PW保存（メイン） */
 const unlockInput=$('unlockPwMain');
 unlockInput.value = localStorage.getItem(KEY_UNLOCK)||'';
@@ -1075,6 +1117,8 @@ function findSeatByUid(uid){
 }
 
 /* === 利用履歴 === */
+// outMarked: 手動/管理者の特別退室（★）
+// outAuto  : 日跨ぎの自動退室（＊）
 function addHistoryOnEnter(uid, when){
   const arr = loadHistory();
   arr.push({
@@ -1083,6 +1127,7 @@ function addHistoryOnEnter(uid, when){
     inAt: when.toISOString(),
     outAt: null,
     outMarked: false,
+    outAuto: false,
   });
   saveHistory(arr);
 }
@@ -1093,6 +1138,22 @@ function addHistoryOnLeave(uid, when, withStar){
     if (String(r.uid) === String(uid) && !r.outAt){
       r.outAt = when.toISOString();
       r.outMarked = !!withStar;
+      // 自動ではない通常/管理者退室なので outAuto は false のまま
+      r.outAuto = r.outAuto || false;
+      break;
+    }
+  }
+  saveHistory(arr);
+}
+// 自動退室（＊）専用：指定 uid の未退室レコードを 23:59:00 で締める
+function addHistoryOnAutoLeave(uid, leaveAt){
+  const arr = loadHistory();
+  for (let i = arr.length - 1; i >= 0; i--){
+    const r = arr[i];
+    if (String(r.uid) === String(uid) && !r.outAt){
+      r.outAt = leaveAt.toISOString();
+      r.outMarked = false;   // ★は付けない
+      r.outAuto = true;      // ＊を付ける
       break;
     }
   }
@@ -1127,6 +1188,8 @@ function loadQueue(){ try{ return JSON.parse(localStorage.getItem(LOG_QUEUE_KEY)
 function saveQueue(q){ localStorage.setItem(LOG_QUEUE_KEY, JSON.stringify(q)); }
 async function pushLog(payload){
   const now = new Date();
+  // payload.star は true/false だけでなく '＊' も許容（true=★, '＊'=＊, それ以外は空）
+  const starStr = (payload.star === '＊') ? '＊' : (payload.star ? '★' : '');
   const body = new URLSearchParams({
     apikey: LOG_SHARED_KEY || '',
     uid: String(payload.uid||''),
@@ -1134,7 +1197,7 @@ async function pushLog(payload){
     seatNo: payload.seatNo || '',
     method: payload.method || '',
     roomPrefix: payload.roomPrefix || '',
-    star: payload.star ? '★' : '',
+    star: starStr,
     clientTime: now.toISOString(),
     clientTz: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
     deviceId: getDeviceId(),
@@ -1167,8 +1230,19 @@ async function flushLogQueue(){
 }
 window.addEventListener('online', flushLogQueue);
 window.addEventListener('focus', flushLogQueue);
-document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') flushLogQueue(); });
-window.addEventListener('load', ()=>{ flushLogQueue(); loadSsSettings(); resetIdleTimer(); });
+document.addEventListener('visibilitychange', ()=>{
+  if (document.visibilityState==='visible'){
+    flushLogQueue();
+    autoCloseOvernights();
+  }
+});
+window.addEventListener('load', ()=>{
+  flushLogQueue();
+  loadSsSettings();
+  resetIdleTimer();
+  autoCloseOvernights();                 // 起動直後に取りこぼしを処理
+  setInterval(autoCloseOvernights, 60*1000); // 以降は毎分チェック
+});
 
 /* ====== スライドショー（全画面・アイドル起動） ====== */
 const SS_KEY = 'ss.settings.v1';
