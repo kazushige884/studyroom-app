@@ -889,7 +889,7 @@ opsOk.addEventListener('click', ()=>{
     pushLog({
       uid,
       action: 'move',
-      seatNo: `${from}->${to}`,
+      seatNo: `${from}>${to}`,
       method: 'admin',
       roomPrefix: uid ? String(uid).slice(0,3) : '',
       star: false
