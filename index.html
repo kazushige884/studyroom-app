@@ -259,7 +259,10 @@
       <div class="inline-label">教室ID</div>
       <input id="roomIdTop" class="inline-input" type="text" placeholder="教室IDを入力" />
     </div>
-    <!-- パスワード欄は仕様により削除済み -->
+    <div class="inline-row">
+      <div class="inline-label">password</div>
+      <input id="roomPwTop" class="inline-input" type="password" placeholder="password を入力" />
+    </div>
     <button class="login-btn" id="btnTitleLogin">ログイン</button>
   </div>
 </section>
@@ -562,7 +565,9 @@ function forceRunFit(){
 /* ===== タイトル → メイン ===== */
 $('btnTitleLogin').addEventListener('click', ()=>{
   const rid = ($('roomIdTop').value||'').trim();
+  const pw  = ($('roomPwTop') ? $('roomPwTop').value : '').trim();
   if(!rid || rid.length<3){ alert('教室ID（先頭3桁以上）を入力してください'); return; }
+  if(pw !== 'Edic5555'){ alert('パスワードが違います'); return; }
   localStorage.setItem(KEY_ROOM_PREFIX, rid);
   gotoMain();
 });
