@@ -595,14 +595,26 @@ const btnGoLottery = $('btnGoLottery');
 if (btnGoLottery) btnGoLottery.addEventListener('click', ()=>{
   alert('抽選設定は準備中です。');
 });
-/* ===== メインメニューの遷移 ===== */
-$('btnGoRun').addEventListener('click', ()=>{
-  const saved = localStorage.getItem(KEY_UNLOCK)||'';
-  if(!saved){ alert('ロック解除パスワードを設定してください'); return; }
-  gotoRun();
-});
-$('btnGoLayout').addEventListener('click', gotoLayout);
-$('btnGoSs').addEventListener('click', gotoSs);
+/* ===== メインメニューの遷移（要素存在ガード付き） ===== */
+const btnGoRun   = $('btnGoRun');
+const btnGoLayout= $('btnGoLayout');
+const btnGoSs    = $('btnGoSs');
+
+if (btnGoRun) {
+  btnGoRun.addEventListener('click', ()=>{
+    const saved = localStorage.getItem(KEY_UNLOCK)||'';
+    if(!saved){ alert('ロック解除パスワードを設定してください'); return; }
+    gotoRun();
+  });
+}
+
+if (btnGoLayout) {
+  btnGoLayout.addEventListener('click', gotoLayout);
+}
+
+if (btnGoSs) {
+  btnGoSs.addEventListener('click', gotoSs);
+}
 
 /* ===== 履歴CSV ＆ メール下書き ===== */
 const btnReport = $('btnMakeReport');
