@@ -54,7 +54,12 @@
 
   /* ===== ③ メインメニュー ===== */
   #view-main .wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
-  #view-main .title{font-size:40pt;margin:0 0 12px;align-self:flex-start}
+   #view-main .title{font-size:40pt;margin:0 0 12px;align-self:flex-start}
++ #view-main .btn-row{display:flex;gap:var(--gap);width:100%;flex-wrap:wrap}
++ #view-main .btn-row .btn{flex:1;min-width:260px}
++ #view-main .btn-lottery{
++   font-size:32pt;background:#fff;color:#000;padding:12px 36px;margin:12px 0;width:auto;
++ }
   #view-main .btn{border:none;border-radius:14px;cursor:pointer;font-weight:800;display:block}
   #view-main .btn-start{
     font-size:60pt;background:var(--blue);color:#000;padding:20px 60px;margin:12px 0; width:auto;
@@ -215,7 +220,7 @@
     #view-title .inline-label{font-size:28pt}
     #view-main .title{font-size:28pt}
     #view-main .btn-start{font-size:36pt;padding:16px 36px}
-    #view-main .btn-layout,#view-main .btn-report,#view-main .btn-ss{font-size:26pt}
+    #view-main .btn-layout,#view-main .btn-report,#view-main .btn-ss,#view-main .btn-lottery{font-size:26pt}
     #view-main .row label{font-size:22pt}
     #view-main input[type="date"]{font-size:18pt}
     #view-main .row-pw input{font-size:22pt;width:180px}
@@ -323,7 +328,10 @@
 
     <button class="btn btn-start" id="btnGoRun">自習室開始</button>
     <button class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
-    <button class="btn btn-ss" id="btnGoSs">スライドショー設定</button>
+    <div class="btn-row">
+  <button class="btn btn-ss" id="btnGoSs">スライドショー設定</button>
+  <button class="btn btn-lottery" id="btnGoLottery">抽選設定</button>
+</div>
 
     
 
@@ -572,8 +580,13 @@ $('btnTitleLogin').addEventListener('click', ()=>{
   gotoMain();
 });
 
-/* ===== メインメニューの遷移 ===== */
-$('btnGoRun').addEventListener('click', ()=>{
++ // 抽選設定（未実装なら仮ダイアログ）
++ const btnGoLottery = $('btnGoLottery');
++ if (btnGoLottery) btnGoLottery.addEventListener('click', ()=>{
++   alert('抽選設定は準備中です。');
++ });
+ /* ===== メインメニューの遷移 ===== */
+ $('btnGoRun').addEventListener('click', ()=>{
   const saved = localStorage.getItem(KEY_UNLOCK)||'';
   if(!saved){ alert('ロック解除パスワードを設定してください'); return; }
   gotoRun();
