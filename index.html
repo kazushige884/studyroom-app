@@ -55,8 +55,8 @@
   /* ===== ③ メインメニュー ===== */
   #view-main .wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
    #view-main .title{font-size:40pt;margin:0 0 12px;align-self:flex-start}
-  #view-main .btn-row{display:flex;gap:var(--gap);width:100%;flex-wrap:wrap}
-  #view-main .btn-row .btn{flex:1;min-width:260px}
+    #view-main .btn-row{display:flex;gap:var(--gap);width:100%;flex-wrap:wrap}
+  #view-main .btn-row .btn{flex:0 0 calc(50% - var(--gap));min-width:0}
   #view-main .btn-lottery{
     font-size:32pt;background:#fff;color:#000;padding:12px 36px;margin:12px 0;width:auto;
   }
@@ -329,7 +329,7 @@
     <button class="btn btn-start" id="btnGoRun">自習室開始</button>
     <button class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
     <div class="btn-row">
-  <button class="btn btn-ss" id="btnGoSs">スライドショー設定</button>
+  <button type="button" class="btn btn-ss" id="btnGoSs">スライドショー設定</button>
   <button class="btn btn-lottery" id="btnGoLottery">抽選設定</button>
 </div>
 
