@@ -268,7 +268,7 @@
       <div class="inline-label">password</div>
       <input id="roomPwTop" class="inline-input" type="password" placeholder="password を入力" />
     </div>
-    <button class="login-btn" id="btnTitleLogin">ログイン</button>
+    <button type="button" class="login-btn" id="btnTitleLogin">ログイン</button>
   </div>
 </section>
 
@@ -448,16 +448,7 @@
   <div id="err" class="status" style="color:#ff2d55"></div>
 </section>
 
-<!-- 確認モーダル（scan） -->
-<div id="confirmDlg" role="dialog" aria-modal="true" aria-label="確認" style="display:none; align-items:center; justify-content:center;">
-  <div class="cbox">
-    <div id="confirmMsg" class="msg">XXXXX を処理しますか？</div>
-    <div class="btns" style="display:flex;gap:10px;justify-content:flex-end">
-      <button id="confirmCancel" class="btn">キャンセル</button>
-      <button id="confirmOk" class="btn primary">OK</button>
-    </div>
-  </div>
-</div>
+
 
 <!-- 座席割当モーダル（入室OK後） -->
 <div id="assignDlg" role="dialog" aria-modal="true" aria-label="座席割当" style="display:none; align-items:center; justify-content:center;">
@@ -571,9 +562,11 @@ function forceRunFit(){
 }
 
 /* ===== タイトル → メイン ===== */
-$('btnTitleLogin').addEventListener('click', ()=>{
-  const rid = ($('roomIdTop').value||'').trim();
-  const pw  = ($('roomPwTop') ? $('roomPwTop').value : '').trim();
+const loginBtn = $('btnTitleLogin');
+if (loginBtn) {
+  loginBtn.addEventListener('click', ()=>{
+    const rid = ($('roomIdTop')?.value||'').trim();
+    const pw  = ($('roomPwTop')?.value||'').trim();
   if(!rid || rid.length<3){ alert('教室ID（先頭3桁以上）を入力してください'); return; }
   if(pw !== 'Edic5555'){ alert('パスワードが違います'); return; }
   localStorage.setItem(KEY_ROOM_PREFIX, rid);
