@@ -62,12 +62,16 @@
   flex: 0 0 calc(10% - var(--gap));
   min-width: 0;
   display: flex; align-items: center; justify-content: center;
-  white-space: normal;
+  white-space: normal !important;  /* ← 強制で改行許可 */
   line-height: 1.2;
   min-height: 120px;
   padding: 12px 16px;
   font-size: 24pt;
 }
+
+/* 念押し：<br> を確実に改行として扱う */
+#view-main #btnGoSs br,
+#view-main #btnGoLottery br { display: inline !important; }
 
 #view-main #btnGoSs {
   transform: translateX(-20%);
