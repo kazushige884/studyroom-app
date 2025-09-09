@@ -188,6 +188,28 @@
   .btn{border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer}
   .btn.primary{background:#fff;color:#000}
 
+  /* ===== 抽選設定のスタイル調整 ===== */
+#view-lottery label {
+  font-size: 2em;         /* 抽選設定内のラベル文字サイズ */
+  line-height: 1.5;       /* 行間 */
+}
+
+#view-lottery input[type="checkbox"] {
+  width: 1em;
+  height: 1em;            /* フォントに揃える */
+  transform: none;        /* scale拡大を無効化 */
+  vertical-align: middle; /* テキストと揃える */
+}
+
+#view-lottery input[type="number"],
+#view-lottery input[type="text"] {
+  height: 1.5em;          /* フォント高さに比例 */
+  font-size: 1em;
+  padding: 4px 6px;
+  width: 4em;             /* 3桁程度が入る幅 */
+  box-sizing: border-box;
+}
+
   /* ===== ⑥ 入室・退出（スキャン） ===== */
   #view-scan .page{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
   #view-scan .main{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center}
