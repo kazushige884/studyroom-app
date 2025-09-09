@@ -59,14 +59,22 @@
   /* ボタンの幅とフォントサイズの調整（上書き） */
 #view-main #btnGoSs,
 #view-main #btnGoLottery {
-  flex: 0 0 calc(10% - var(--gap)); /* ← 25% の 2/5 = 10% に縮小 */
+  flex: 0 0 calc(10% - var(--gap));
   min-width: 0;
   display: flex; align-items: center; justify-content: center;
-  white-space: normal;               /* 改行を許可 */
+  white-space: normal;
   line-height: 1.2;
-  min-height: 120px;                 /* 2つのボタンの高さを同一に */
+  min-height: 120px;
   padding: 12px 16px;
-  font-size: 24pt;                   /* 共有の基準（個別で上書きあり） */
+  font-size: 24pt;
+}
+
+#view-main #btnGoSs {
+  transform: translateX(-20%);
+}
+
+#view-main #btnGoLottery {
+  transform: translateX(20%);
 }
 
 /* 「スライドショー設定」— フォント80%＆「設定」を改行表示 */
@@ -738,8 +746,8 @@
     <button type="button" class="btn btn-start" id="btnGoRun">自習室開始</button>
 <button type="button" class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
 <div class="btn-row">
-  <button type="button" class="btn btn-ss" id="btnGoSs" onclick="gotoSs()">スライドショー設定</button>
-  <button type="button" class="btn btn-lottery" id="btnGoLottery" onclick="gotoLottery()">抽選設定</button>
+  <button type="button" class="btn btn-ss" id="btnGoSs" onclick="gotoSs()">スライドショー<br>設定</button>
+<button type="button" class="btn btn-lottery" id="btnGoLottery" onclick="gotoLottery()">抽選<br>設定</button>
 </div>
 
     
