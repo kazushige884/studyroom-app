@@ -298,6 +298,100 @@
 
 /* 行の余白は少し広げる */
 #view-lottery .row { gap: 1em; }
+/* ===== 抽選設定（レスポンシブ調整・上書き） ===== */
+#view-lottery{
+  /* ページ全体の文字をやや小さめに（端末幅に追随） */
+  font-size: clamp(13px, 1.6vw, 16px);
+}
+#view-lottery .wrap{
+  max-width: min(1100px, 96vw);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#view-lottery h1{
+  /* 見出しは控えめに */
+  font-size: clamp(18px, 2.2vw, 26px);
+  line-height: 1.25;
+  margin: 0 0 6px;
+}
+#view-lottery .card{
+  background:#111;border:1px solid var(--border);border-radius:14px;padding:14px;
+}
+
+/* 各行はグリッドで整列（小さな画面では自動折返し） */
+#view-lottery .row{
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto auto;
+  /* [チェック] [ラベル] [名称入力(広め)] [出現率ラベル] [入力(短め)] [補助テキスト] */
+  gap: 10px 12px;
+  align-items: center;
+  line-height: 1.25;        /* 行間：文字サイズの約1/1.25 ≒ 0.8〜0.9倍 */
+  padding: 6px 0;
+}
+#view-lottery .row > label{ min-width: auto; white-space: nowrap; }
+
+/* スマホでは縦に崩れすぎないよう段組みを変更 */
+@media (max-width: 860px){
+  #view-lottery .row{
+    grid-template-columns: auto auto 1fr auto auto;
+    grid-auto-rows: auto;
+  }
+}
+
+/* チェックボックスの見た目を端末幅に応じて拡大（統一サイズ） */
+#view-lottery .lotchk,
+#view-lottery input[type="checkbox"]{
+  transform: scale(clamp(1.1, 2.2vw, 1.6));
+  margin-right: 8px;
+}
+
+/* 入力枠は既存より“高さ1.5倍相当”に */
+#view-lottery input[type="text"],
+#view-lottery input[type="number"]{
+  font-size: 1em;
+  height: 2.4em;        /* 高め */
+  padding: 0.4em 0.6em;
+  border-radius: 10px;
+  border:1px solid var(--border);
+  background:#0f0f0f;color:#fff;
+  box-sizing: border-box;
+}
+
+/* 名称の入力は広め、出現率などの数値は“3桁程度”の幅に短縮 */
+#view-lottery input[id^="lotName"]{ min-width: 18ch; }
+
+/* 抽選出現率と各アタリのレート欄を短く */
+#view-lottery #lotteryEvery,
+#view-lottery input[id^="lotRate"]{
+  width: 7ch;           /* 3桁＋α */
+  min-width: 7ch;
+}
+
+/* スピンボタンと合わせて狭い面積で配置 */
+#view-lottery .spinwrap{ gap: 8px; }
+#view-lottery .spinwrap input[type="number"]{ width: 7ch; }
+
+/* 「当選確率」など補助文言のトーン */
+#view-lottery .unit, 
+#view-lottery .lotProb{ color:#cfcfcf; white-space: nowrap; }
+
+/* 右寄せボタン行の折返し対策 */
+#view-lottery .row.right{
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 画面が極端に狭い場合の保険 */
+@media (max-width: 520px){
+  #view-lottery .row{
+    grid-template-columns: auto 1fr auto auto; /* 可能な限り簡素化 */
+  }
+  #view-lottery input[id^="lotName"]{ min-width: 12ch; }
+}
 </style>
 </head>
 <body>
@@ -394,7 +488,7 @@
 <div class="card" aria-label="アタリ拡張設定">
   <!-- アタリ01 -->
   <div class="row">
-    <input id="lotOn01" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn01" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ01</label>
     <span>名称</span>
     <input id="lotName01" type="text" placeholder="例：文房具セット">
@@ -404,7 +498,7 @@
   </div>
   <!-- アタリ02 -->
   <div class="row">
-    <input id="lotOn02" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn02" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ02</label>
     <span>名称</span>
     <input id="lotName02" type="text">
@@ -414,7 +508,7 @@
   </div>
   <!-- アタリ03 -->
   <div class="row">
-    <input id="lotOn03" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn03" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ03</label>
     <span>名称</span>
     <input id="lotName03" type="text">
@@ -424,7 +518,7 @@
   </div>
   <!-- アタリ04 -->
   <div class="row">
-    <input id="lotOn04" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn04" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ04</label>
     <span>名称</span>
     <input id="lotName04" type="text">
@@ -434,7 +528,7 @@
   </div>
   <!-- アタリ05 -->
   <div class="row">
-    <input id="lotOn05" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn05" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ05</label>
     <span>名称</span>
     <input id="lotName05" type="text">
@@ -444,7 +538,7 @@
   </div>
   <!-- アタリ06 -->
   <div class="row">
-    <input id="lotOn06" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn06" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ06</label>
     <span>名称</span>
     <input id="lotName06" type="text">
@@ -454,7 +548,7 @@
   </div>
   <!-- アタリ07 -->
   <div class="row">
-    <input id="lotOn07" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn07" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ07</label>
     <span>名称</span>
     <input id="lotName07" type="text">
@@ -464,7 +558,7 @@
   </div>
   <!-- アタリ08 -->
   <div class="row">
-    <input id="lotOn08" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn08" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ08</label>
     <span>名称</span>
     <input id="lotName08" type="text">
@@ -474,7 +568,7 @@
   </div>
   <!-- アタリ09 -->
   <div class="row">
-    <input id="lotOn09" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn09" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ09</label>
     <span>名称</span>
     <input id="lotName09" type="text">
@@ -484,7 +578,7 @@
   </div>
   <!-- アタリ10 -->
   <div class="row">
-    <input id="lotOn10" type="checkbox" style="transform:scale(1.4);margin-right:8px">
+    <input id="lotOn10" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ10</label>
     <span>名称</span>
     <input id="lotName10" type="text">
@@ -523,110 +617,7 @@
   </div>
 </section>
 
-<!-- ===== ③.5 抽選設定 ===== -->
-<section id="view-lottery" class="container hidden">
-  <div class="wrap">
-    <h1>抽選設定</h1>
 
-    <div class="card" aria-label="アタリ設定">
-      <!-- アタリ1 -->
-      <div class="row">
-        <label>アタリ1</label>
-        <span>名称</span>
-        <input id="lotName1" type="text" placeholder="例：文房具セット" />
-        <span>出現率</span>
-        <input id="lotRate1" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ2 -->
-      <div class="row">
-        <label>アタリ2</label>
-        <span>名称</span>
-        <input id="lotName2" type="text" />
-        <span>出現率</span>
-        <input id="lotRate2" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ3 -->
-      <div class="row">
-        <label>アタリ3</label>
-        <span>名称</span>
-        <input id="lotName3" type="text" />
-        <span>出現率</span>
-        <input id="lotRate3" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ4 -->
-      <div class="row">
-        <label>アタリ4</label>
-        <span>名称</span>
-        <input id="lotName4" type="text" />
-        <span>出現率</span>
-        <input id="lotRate4" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ5 -->
-      <div class="row">
-        <label>アタリ5</label>
-        <span>名称</span>
-        <input id="lotName5" type="text" />
-        <span>出現率</span>
-        <input id="lotRate5" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ6 -->
-      <div class="row">
-        <label>アタリ6</label>
-        <span>名称</span>
-        <input id="lotName6" type="text" />
-        <span>出現率</span>
-        <input id="lotRate6" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ7 -->
-      <div class="row">
-        <label>アタリ7</label>
-        <span>名称</span>
-        <input id="lotName7" type="text" />
-        <span>出現率</span>
-        <input id="lotRate7" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ8 -->
-      <div class="row">
-        <label>アタリ8</label>
-        <span>名称</span>
-        <input id="lotName8" type="text" />
-        <span>出現率</span>
-        <input id="lotRate8" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ9 -->
-      <div class="row">
-        <label>アタリ9</label>
-        <span>名称</span>
-        <input id="lotName9" type="text" />
-        <span>出現率</span>
-        <input id="lotRate9" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-      <!-- アタリ10 -->
-      <div class="row">
-        <label>アタリ10</label>
-        <span>名称</span>
-        <input id="lotName10" type="text" />
-        <span>出現率</span>
-        <input id="lotRate10" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
-        <span class="unit">回に1回</span><span class="lotProb">当選確率 0％</span>
-      </div>
-    </div>
-
-    <div class="row right">
-      <button class="btn ghost" id="lotteryBack">戻る</button>
-      <button class="btn primary" id="lotterySave">保存</button>
-    </div>
-  </div>
-</section>
 
 <!-- ===== ④ レイアウト作成 ===== -->
 <section id="view-layout" class="container hidden">
