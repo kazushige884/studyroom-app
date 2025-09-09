@@ -345,7 +345,7 @@
     <button type="button" class="btn btn-start" id="btnGoRun">自習室開始</button>
 <button type="button" class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
 <div class="btn-row">
-  <button type="button" class="btn btn-ss" id="btnGoSs">スライドショー設定</button>
+  <button type="button" class="btn btn-ss" id="btnGoSs" onclick="gotoSs()">スライドショー設定</button>
   <button type="button" class="btn btn-lottery" id="btnGoLottery">抽選設定</button>
 </div>
 
@@ -1025,9 +1025,10 @@ okBtn.addEventListener('click', ()=>{
 });
 
 /* 確認モーダル：OK/キャンセル */
-const confirmDlg=$('confirmDlg'), confirmMsgEl=$('confirmMsg');
-$('confirmCancel').addEventListener('click', ()=>{ confirmDlg.style.display='none'; gotoRun(); });
-$('confirmOk').addEventListener('click', ()=>{
+const confirmDlg=$('confirmDlg'), confirmMsgEl=$('confirmMsg'),
+      confirmCancelBtn=$('confirmCancel'), confirmOkBtn=$('confirmOk');
+if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', ()=>{ if (confirmDlg) confirmDlg.style.display='none'; gotoRun(); });
+if (confirmOkBtn) confirmOkBtn.addEventListener('click', ()=>{
   confirmDlg.style.display='none';
   if (scanMode==='enter') {
     const seatNo = findRecommendedSeat();
