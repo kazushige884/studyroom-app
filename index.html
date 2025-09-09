@@ -342,11 +342,11 @@
   <div class="wrap">
     <h1 class="title">自習室管理メインメニュー</h1>
 
-    <button class="btn btn-start" id="btnGoRun">自習室開始</button>
-    <button class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
-    <div class="btn-row">
+    <button type="button" class="btn btn-start" id="btnGoRun">自習室開始</button>
+<button type="button" class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
+<div class="btn-row">
   <button type="button" class="btn btn-ss" id="btnGoSs">スライドショー設定</button>
-  <button class="btn btn-lottery" id="btnGoLottery">抽選設定</button>
+  <button type="button" class="btn btn-lottery" id="btnGoLottery">抽選設定</button>
 </div>
 
     
@@ -595,26 +595,26 @@ const btnGoLottery = $('btnGoLottery');
 if (btnGoLottery) btnGoLottery.addEventListener('click', ()=>{
   alert('抽選設定は準備中です。');
 });
-/* ===== メインメニューの遷移（要素存在ガード付き） ===== */
-const btnGoRun   = $('btnGoRun');
-const btnGoLayout= $('btnGoLayout');
-const btnGoSs    = $('btnGoSs');
+/* ===== メインメニューの遷移（イベント委譲方式） ===== */
+document.addEventListener('click', (e)=>{
+  const t = e.target.closest('button');
+  if (!t) return;
 
-if (btnGoRun) {
-  btnGoRun.addEventListener('click', ()=>{
+  if (t.id === 'btnGoRun') {
     const saved = localStorage.getItem(KEY_UNLOCK)||'';
     if(!saved){ alert('ロック解除パスワードを設定してください'); return; }
     gotoRun();
-  });
-}
-
-if (btnGoLayout) {
-  btnGoLayout.addEventListener('click', gotoLayout);
-}
-
-if (btnGoSs) {
-  btnGoSs.addEventListener('click', gotoSs);
-}
+  }
+  else if (t.id === 'btnGoLayout') {
+    gotoLayout();
+  }
+  else if (t.id === 'btnGoSs') {
+    gotoSs();
+  }
+  else if (t.id === 'btnGoLottery') {
+    alert('抽選設定は準備中です。');
+  }
+}, { passive:true });
 
 /* ===== 履歴CSV ＆ メール下書き ===== */
 const btnReport = $('btnMakeReport');
