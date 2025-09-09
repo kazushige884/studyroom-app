@@ -440,6 +440,48 @@
 }
 
 /* ───────────────────────────────────────────── */
+/* ==== 抽選設定（#view-lottery）最終上書き ==== */
+#view-lottery { font-size: clamp(13px, 1.6vw, 16px); }
+#view-lottery .card{ background:#111;border:1px solid var(--border);border-radius:14px;padding:14px; }
+
+/* 行は詰めて横並び（小画面では自動折返し） */
+#view-lottery .row{
+  display:flex;
+  align-items:center;
+  gap:6px;            /* “名称”と入力枠の間を最小限に */
+  flex-wrap:wrap;
+}
+
+/* チェックボックスはスライドショー設定と同じ大きさに統一 */
+#view-lottery input[type="checkbox"]{
+  transform: scale(2);
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+/* 入力の高さは約1.5倍相当（触りやすく） */
+#view-lottery input[type="text"],
+#view-lottery input[type="number"]{
+  height: 2.4em;
+  padding: 0.4em 0.6em;
+  border-radius: 10px;
+  border:1px solid var(--border);
+  background:#0f0f0f;color:#fff;
+  box-sizing: border-box;
+}
+
+/* “名称”のテキストボックス：インラインの width:66% を打ち消して短めに */
+#view-lottery input[id^="lotName"]{
+  width: auto !important;   /* ← インライン幅を無効化 */
+  min-width: 12ch;          /* 折返しにくい最小幅 */
+}
+
+/* 抽選出現率と各アタリの数値欄：3桁程度の幅に */
+#view-lottery #lotteryEvery,
+#view-lottery input[id^="lotRate"]{
+  width: 7ch;
+  min-width: 7ch;
+}
 </style>
 </head>
 <body>
@@ -510,7 +552,7 @@
 </section>
 
 <!-- ===== 抽選設定（新規） ===== -->
-<section id="view-lottery-legacy" class="container hidden">
+<section id="view-lottery" class="container hidden">
   <div class="wrap">
     <h1 style="font-size:200%; line-height:1.5;">抽選設定</h1>
 
@@ -520,9 +562,9 @@
   <input id="lotteryEnabled" type="checkbox" style="margin-right:24px">
   <label>抽選出現率</label>
   <div class="spinwrap">
-    <button class="spinbtn" onclick="stepSpin('lotChance',-10)">−10</button>
-    <input id="lotChance" type="number" value="100">
-    <button class="spinbtn" onclick="stepSpin('lotChance',10)">＋10</button>
+    <button class="spinbtn" data-target="lotteryEvery" data-step="-10">−10</button>
+    <input id="lotteryEvery" type="number" value="100">
+    <button class="spinbtn" data-target="lotteryEvery" data-step="10">＋10</button>
   </div>
   <span>回に1回出現</span>
 </div>
