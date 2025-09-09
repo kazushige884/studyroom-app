@@ -269,6 +269,13 @@
   #bgmPicker .header .title{font-size:20px;font-weight:700}
   #bgmPicker .pick-row{cursor:pointer}
   #bgmPicker .pick-row:hover{background:#1a1a1a}
+/* ＋／ー スピンボタン */
+.spinbtn{
+  border:1px solid var(--border);border-radius:8px;background:#1b1b1b;color:#fff;
+  font-weight:800;cursor:pointer;line-height:1;min-width:2.4em;height:2.2em
+}
+.spinwrap{display:flex;align-items:center;gap:8px}
+.spinwrap input[type="number"]{width:120px}
 </style>
 </head>
 <body>
@@ -349,11 +356,15 @@
       </div>
     </div>
 
-    <div class="card">
+        <div class="card">
       <div class="row">
         <label for="lotteryEvery">抽選出現率</label>
-        <input id="lotteryEvery" type="number"$1 step="1" min="1" />
-        <span>回に1回出現</span>
+        <div class="spinwrap">
+          <button type="button" class="spinbtn" data-target="lotteryEvery" data-step="-1">ー</button>
+          <input id="lotteryEvery" type="number" step="1" min="1" inputmode="numeric" />
+          <button type="button" class="spinbtn" data-target="lotteryEvery" data-step="1">＋</button>
+          <span>回に1回出現</span>
+        </div>
       </div>
     </div>
 
@@ -840,6 +851,38 @@ function loadLotteryUI(){
 /* UIイベント */
 const btnLotteryBack = $('btnLotteryBack');
 if (btnLotteryBack) btnLotteryBack.addEventListener('click', gotoMain);
+
+// ＋／ー スピンボタン（抽選出現率を整数で増減）
+document.addEventListener('click', (e)=>{
+  const b = e.target.closest('.spinbtn');
+  if(!b) return;
+  const target = $(b.dataset.target);
+  if(!target) return;
+  const step = Number(b.dataset.step||1);
+  let v = Math.floor(Number(target.value||0));
+  if(!Number.isFinite(v)) v = 0;
+  v += step;
+  // 抽選出現率は 1 以上に制限
+  if (target.id === 'lotteryEvery') {
+    v = Math.max(1, v);
+  }
+  target.value = v;
+  // 入力イベントを発火（必要に応じて他の連動処理が走る）
+  target.dispatchEvent(new Event('input', {bubbles:true}));
+});
+
+// 手入力も整数化＋最小値1に補正
+(function(){
+  const el = $('lotteryEvery');
+  if(!el) return;
+  const fix = ()=>{
+    if(el.value === '') return;
+    const v = Math.max(1, Math.floor(Number(el.value)));
+    el.value = Number.isFinite(v) ? v : 1;
+  };
+  el.addEventListener('input', fix);
+  el.addEventListener('change', fix);
+})();
 
 // ===== 当選確率の自動計算 =====
 function updateLotPercentage(){
