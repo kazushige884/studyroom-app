@@ -330,7 +330,12 @@
   margin: 0 0 6px;
 }
 #view-lottery .card{
-  background:#111;border:1px solid var(--border);border-radius:14px;padding:14px;
+  width: 100%;                /* 枠の幅を統一（wrap=中央寄せの基準） */
+  margin: 0 auto;             /* 左右位置を中央に固定 */
+  background:#111;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:14px;
 }
 
 /* 各行はグリッドで整列（小さな画面では自動折返し） */
@@ -557,8 +562,8 @@
 
     <div class="card">
 <div class="row">
-  <label>有効</label>
-  <input id="lotteryEnabled" type="checkbox" style="margin-right:24px">
+  <input id="lotteryEnabled" type="checkbox" style="margin-right:12px">
+<label for="lotteryEnabled">有効</label>
   <label>抽選出現率</label>
   <div class="spinwrap">
     <button class="spinbtn" data-target="lotteryEvery" data-step="-10">−10</button>
@@ -567,7 +572,6 @@
   </div>
   <span>回に1回出現</span>
 </div>
-      </div>
     </div>
 
     <!-- ▼ ここから追加（チェックボックス + アタリ01〜10） -->
