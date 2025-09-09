@@ -106,9 +106,9 @@
   }
   #view-main #btnGoSs{ font-size: calc(22pt * 0.8); } /* SSだけ80% */
 }
-  ##view-main .btn-lottery{
-    font-size:32pt;background:#fff;color:#000;padding:12px 36px;margin:12px 0;width:auto;
-    position:relative; z-index:10; pointer-events:auto;
+  #view-main .btn-lottery{
+  font-size:32pt;background:#fff;color:#000;padding:12px 36px;margin:12px 0;width:auto;
+  position:relative; z-index:10; pointer-events:auto;
 }
   #view-main .btn{border:none;border-radius:14px;cursor:pointer;font-weight:800;display:block}
   #view-main .btn-start{
@@ -117,9 +117,18 @@
   #view-main .btn-layout{
     font-size:40pt;background:#fff;color:#000;padding:14px 40px;margin:12px 0; width:auto;
   }
-  #view-main .btn-ss{
-    font-size:32pt;background:#fff;color:#000;padding:12px 36px;margin:12px 0; width:auto;
-  }
+  #view-main .btn-ss,
+#view-main .btn-lottery{
+  background:#fff;
+  color:#000;
+  margin:12px 0;
+  width:auto;
+  padding:12px 36px;              /* 同じ余白に統一 */
+  min-height:80px;                /* ← 高さを同一にする基準 */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
   #view-main .row{display:flex;flex-direction:row;align-items:center;gap:16px;margin:12px 0;flex-wrap:wrap}
   #view-main .row label{font-size:28pt}
   #view-main input[type="date"]{
