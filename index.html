@@ -99,7 +99,27 @@
     padding:6px 12px;border-radius:10px;border:1px solid var(--border);background:#0f0f0f;color:#fff;outline:none;
   }
 
-  /* ===== ④ レイアウト作成 ===== */
+  /* ===== ③.5 抽選設定 ===== */
+#view-lottery .wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+#view-lottery h1{margin:0 0 8px}
+#view-lottery .card{background:#111;border:1px solid var(--border);border-radius:14px;padding:16px}
+#view-lottery .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#view-lottery label{font-size:1.2em}
+#view-lottery input[type="text"]{
+  font-size:1.1em;padding:8px 10px;border-radius:10px;border:1px solid var(--border);
+  background:#0f0f0f;color:#fff;outline:none;min-width:240px
+}
+#view-lottery input[type="number"]{
+  font-size:1.1em;padding:8px 10px;border-radius:10px;border:1px solid var(--border);
+  background:#0f0f0f;color:#fff;outline:none;width:120px
+}
+#view-lottery .unit{opacity:.8}
+#view-lottery .row.right{justify-content:flex-end}
+#view-lottery .btn{border:none;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer}
+#view-lottery .btn.ghost{background:#1b1b1b;color:#fff;border:1px solid var(--border)}
+#view-lottery .btn.primary{background:#fff;color:#000}
+
+/* ===== ④ レイアウト作成 ===== */
   #view-layout { position:relative; }
   #view-layout .wrap{min-height:100%;display:flex;flex-direction:column;gap:14px}
   #view-layout h1{font-size:18px;margin:0}
@@ -358,6 +378,111 @@
   </div>
 </section>
 
+<!-- ===== ③.5 抽選設定 ===== -->
+<section id="view-lottery" class="container hidden">
+  <div class="wrap">
+    <h1>抽選設定</h1>
+
+    <div class="card" aria-label="アタリ設定">
+      <!-- アタリ1 -->
+      <div class="row">
+        <label>アタリ1</label>
+        <span>名称</span>
+        <input id="lotName1" type="text" placeholder="例：文房具セット" />
+        <span>出現率</span>
+        <input id="lotRate1" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ2 -->
+      <div class="row">
+        <label>アタリ2</label>
+        <span>名称</span>
+        <input id="lotName2" type="text" />
+        <span>出現率</span>
+        <input id="lotRate2" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ3 -->
+      <div class="row">
+        <label>アタリ3</label>
+        <span>名称</span>
+        <input id="lotName3" type="text" />
+        <span>出現率</span>
+        <input id="lotRate3" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ4 -->
+      <div class="row">
+        <label>アタリ4</label>
+        <span>名称</span>
+        <input id="lotName4" type="text" />
+        <span>出現率</span>
+        <input id="lotRate4" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ5 -->
+      <div class="row">
+        <label>アタリ5</label>
+        <span>名称</span>
+        <input id="lotName5" type="text" />
+        <span>出現率</span>
+        <input id="lotRate5" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ6 -->
+      <div class="row">
+        <label>アタリ6</label>
+        <span>名称</span>
+        <input id="lotName6" type="text" />
+        <span>出現率</span>
+        <input id="lotRate6" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ7 -->
+      <div class="row">
+        <label>アタリ7</label>
+        <span>名称</span>
+        <input id="lotName7" type="text" />
+        <span>出現率</span>
+        <input id="lotRate7" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ8 -->
+      <div class="row">
+        <label>アタリ8</label>
+        <span>名称</span>
+        <input id="lotName8" type="text" />
+        <span>出現率</span>
+        <input id="lotRate8" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ9 -->
+      <div class="row">
+        <label>アタリ9</label>
+        <span>名称</span>
+        <input id="lotName9" type="text" />
+        <span>出現率</span>
+        <input id="lotRate9" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+      <!-- アタリ10 -->
+      <div class="row">
+        <label>アタリ10</label>
+        <span>名称</span>
+        <input id="lotName10" type="text" />
+        <span>出現率</span>
+        <input id="lotRate10" type="number" min="0" max="100" step="0.1" inputmode="decimal" />
+        <span class="unit">％</span>
+      </div>
+    </div>
+
+    <div class="row right">
+      <button class="btn ghost" id="lotteryBack">戻る</button>
+      <button class="btn primary" id="lotterySave">保存</button>
+    </div>
+  </div>
+</section>
+
 <!-- ===== ④ レイアウト作成 ===== -->
 <section id="view-layout" class="container hidden">
   <button class="back" onclick="gotoMain()">メインメニューに戻る</button>
@@ -590,11 +715,51 @@ if (loginBtn) {
   });
 }
 
-// 抽選設定（未実装なら仮ダイアログ）
+// 抽選設定（画面へ遷移 & 保存）
+const LOTTERY_KEY = 'lottery.settings.v1';
+
+function gotoLottery(){ stopCamera(); loadLotteryUI(); show('view-lottery'); }
+
 const btnGoLottery = $('btnGoLottery');
-if (btnGoLottery) btnGoLottery.addEventListener('click', ()=>{
-  alert('抽選設定は準備中です。');
-});
+if (btnGoLottery) btnGoLottery.addEventListener('click', gotoLottery);
+
+// 保存/読込
+function loadLottery(){
+  try{ return JSON.parse(localStorage.getItem(LOTTERY_KEY) || '[]'); }catch{ return []; }
+}
+function saveLottery(arr){
+  localStorage.setItem(LOTTERY_KEY, JSON.stringify(arr));
+}
+
+// UIへ反映
+function loadLotteryUI(){
+  const arr = loadLottery();
+  for(let i=1;i<=10;i++){
+    const n = $('lotName'+i), r = $('lotRate'+i);
+    const row = arr[i-1] || {};
+    if(n) n.value = row.name || '';
+    if(r) r.value = (row.rate ?? '');
+  }
+}
+
+// UIから保存
+function saveLotteryUI(){
+  const arr = [];
+  for(let i=1;i<=10;i++){
+    const n = $('lotName'+i)?.value?.trim() || '';
+    const rRaw = $('lotRate'+i)?.value;
+    const rate = (rRaw === '' || rRaw == null) ? null : Number(rRaw);
+    arr.push({ name:n, rate: rate });
+  }
+  saveLottery(arr);
+  alert('抽選設定を保存しました');
+}
+
+// ボタン
+const lotteryBack = $('lotteryBack');
+const lotterySave = $('lotterySave');
+if (lotteryBack) lotteryBack.addEventListener('click', gotoMain);
+if (lotterySave) lotterySave.addEventListener('click', saveLotteryUI);
 /* ===== メインメニューの遷移（イベント委譲方式） ===== */
 document.addEventListener('click', (e)=>{
   const t = e.target.closest('button');
