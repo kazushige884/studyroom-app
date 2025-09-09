@@ -194,12 +194,7 @@
   line-height: 1.5;       /* 行間 */
 }
 
-#view-lottery input[type="checkbox"] {
-  width: 1em;
-  height: 1em;            /* フォントに揃える */
-  transform: none;        /* scale拡大を無効化 */
-  vertical-align: middle; /* テキストと揃える */
-}
+
 
 #view-lottery input[type="number"],
 #view-lottery input[type="text"] {
@@ -302,11 +297,7 @@
 /* ===== 抽選設定：フォント半分＋行間1.5 ===== */
 #view-lottery { font-size:50%; line-height:1.5; }
 
-/* チェックボックスを60ptに統一 */
-#view-lottery input[type="checkbox"] {
-  transform: scale(0.1); /* ← 元の1/10サイズに縮小 */
-  vertical-align: middle;
-}
+
 
 /* 入力枠の高さは1.5倍、幅は3桁程度が収まるよう調整 */
 #view-lottery input[type="text"],
@@ -361,12 +352,7 @@
   }
 }
 
-/* チェックボックスの見た目を端末幅に応じて拡大（統一サイズ） */
-#view-lottery .lotchk,
-#view-lottery input[type="checkbox"]{
-  transform: scale(clamp(1.1, 2.2vw, 1.6));
-  margin-right: 8px;
-}
+
 
 /* 入力枠は既存より“高さ1.5倍相当”に */
 #view-lottery input[type="text"],
@@ -412,6 +398,12 @@
     grid-template-columns: auto 1fr auto auto; /* 可能な限り簡素化 */
   }
   #view-lottery input[id^="lotName"]{ min-width: 12ch; }
+}
+/* 抽選設定チェックボックス：スライドショー設定と同じ */
+#view-lottery input[type="checkbox"] {
+  transform: scale(2);
+  margin-right: 12px;
+  vertical-align: middle;
 }
 </style>
 </head>
