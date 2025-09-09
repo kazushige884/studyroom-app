@@ -470,8 +470,8 @@
 
 /* “名称”のテキストボックス：インラインの width:66% を打ち消して短めに */
 #view-lottery input[id^="lotName"]{
-  width: auto !important;   /* ← インライン幅を無効化 */
-  min-width: 12ch;          /* 折返しにくい最小幅 */
+  width: 12ch !important;   /* 名称入力の横幅を固定 */
+  min-width: 12ch;
 }
 
 /* 抽選出現率と各アタリの数値欄：3桁程度の幅に */
@@ -576,7 +576,7 @@
     <input id="lotOn01" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ01</label>
     <span>名称</span>
-    <input id="lotName01" type="text" placeholder="例：文房具セット" style="width:66%" />
+    <input id="lotName01" type="text" placeholder="例：文房具セット" />
     <span>　　出現率</span>
     <input id="lotRate01" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
