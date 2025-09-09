@@ -468,10 +468,11 @@
   box-sizing: border-box;
 }
 
-/* “名称”のテキストボックス：インラインの width:66% を打ち消して短めに */
 #view-lottery input[id^="lotName"]{
-  width: 6ch !important;   /* 名称入力の横幅を固定 */
-  min-width: 6ch;
+  flex: 0 0 12ch !important;   /* ← 伸びない＆基準幅を12chに固定 */
+  width: 12ch !important;
+  min-width: 12ch !important;
+  max-width: 12ch !important;
 }
 
 /* 抽選出現率と各アタリの数値欄：3桁程度の幅に */
@@ -586,7 +587,7 @@
     <input id="lotOn02" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ02</label>
     <span>名称</span>
-    <input id="lotName02" type="text" style="width:66%" />
+    <input id="lotName02" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate02" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
@@ -596,7 +597,7 @@
     <input id="lotOn03" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ03</label>
     <span>名称</span>
-    <input id="lotName03" type="text" style="width:66%" />
+    <input id="lotName03" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate03" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
@@ -606,7 +607,7 @@
     <input id="lotOn04" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ04</label>
     <span>名称</span>
-    <input id="lotName04" type="text" style="width:66%" />
+    <input id="lotName04" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate04" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
@@ -616,7 +617,7 @@
     <input id="lotOn05" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ05</label>
     <span>名称</span>
-    <input id="lotName05" type="text" style="width:66%" />
+    <input id="lotName05" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate05" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
@@ -626,7 +627,7 @@
     <input id="lotOn06" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ06</label>
     <span>名称</span>
-    <input id="lotName06" type="text" style="width:66%" />
+    <input id="lotName06" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate06" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
@@ -636,7 +637,7 @@
     <input id="lotOn07" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ07</label>
     <span>名称</span>
-    <input id="lotName07" type="text" style="width:66%" />
+    <input id="lotName07" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate07" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
@@ -646,7 +647,7 @@
     <input id="lotOn08" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ08</label>
     <span>名称</span>
-    <input id="lotName08" type="text" style="width:66%" />
+    <input id="lotName08" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate08" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
@@ -656,7 +657,7 @@
     <input id="lotOn09" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ09</label>
     <span>名称</span>
-    <input id="lotName09" type="text" style="width:66%" />
+    <input id="lotName09" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate09" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
@@ -666,7 +667,7 @@
     <input id="lotOn10" type="checkbox" class="lotchk">
     <label style="min-width:auto;margin-right:8px">アタリ10</label>
     <span>名称</span>
-    <input id="lotName10" type="text" style="width:66%" />
+    <input id="lotName10" type="text"  />
     <span>　　出現率</span>
     <input id="lotRate10" type="number" min="0" max="100" step="0.1" inputmode="decimal">
     <span class="unit">回に1回</span><span class="lotProb">　　当選確率 0％</span>
