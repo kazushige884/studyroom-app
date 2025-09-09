@@ -59,10 +59,41 @@
   /* ボタンの幅とフォントサイズの調整（上書き） */
 #view-main #btnGoSs,
 #view-main #btnGoLottery {
-  flex: 0 0 calc(25% - var(--gap)); /* 横幅を「2分の1×2」の25%に */
-  font-size: 24pt;                   /* 同じ小さめフォントサイズに統一 */
+  flex: 0 0 calc(10% - var(--gap)); /* ← 25% の 2/5 = 10% に縮小 */
   min-width: 0;
-  white-space: nowrap;               /* 内部改行させない */
+  display: flex; align-items: center; justify-content: center;
+  white-space: normal;               /* 改行を許可 */
+  line-height: 1.2;
+  min-height: 120px;                 /* 2つのボタンの高さを同一に */
+  padding: 12px 16px;
+  font-size: 24pt;                   /* 共有の基準（個別で上書きあり） */
+}
+
+/* 「スライドショー設定」— フォント80%＆「設定」を改行表示 */
+#view-main #btnGoSs{
+  font-size: calc(24pt * 0.8);       /* 80% */
+  color: transparent;                 /* 元テキストは不可視（SRの読み上げは維持） */
+  position: relative;
+}
+#view-main #btnGoSs::after{
+  content: "スライドショー\n設定";
+  white-space: pre;                   /* '\n' を改行として扱う */
+  color: #000;                        /* 表示色 */
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* 「抽選設定」— 「設定」を改行表示（フォントサイズは共有値のまま） */
+#view-main #btnGoLottery{
+  color: transparent;
+  position: relative;
+}
+#view-main #btnGoLottery::after{
+  content: "抽選\n設定";
+  white-space: pre;
+  color: #000;
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
 }
 
 /* スマホなど画面幅が狭い場合の調整 */
@@ -70,8 +101,10 @@
   #view-main #btnGoSs,
   #view-main #btnGoLottery {
     flex: 0 0 calc(50% - var(--gap)); /* スマホでは半分幅を維持 */
-    font-size: 22pt;
+    min-height: 110px;                 /* 高さを揃える */
+    font-size: 22pt;                   /* 共有の基準 */
   }
+  #view-main #btnGoSs{ font-size: calc(22pt * 0.8); } /* SSだけ80% */
 }
   ##view-main .btn-lottery{
     font-size:32pt;background:#fff;color:#000;padding:12px 36px;margin:12px 0;width:auto;
