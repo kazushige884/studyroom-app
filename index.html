@@ -119,6 +119,19 @@
 #view-lottery .btn.ghost{background:#1b1b1b;color:#fff;border:1px solid var(--border)}
 #view-lottery .btn.primary{background:#fff;color:#000}
 
+/* ===== 抽選設定（新規） ===== */
+#view-lottery .wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+#view-lottery h1{margin:0 0 8px}
+#view-lottery .card{background:#111;border:1px solid var(--border);border-radius:14px;padding:16px}
+#view-lottery .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#view-lottery .row.right{justify-content:flex-end}
+#view-lottery label{min-width:12em;font-size:2em}   /* ← スライドショー設定と同じ大きさ */
+#lotteryEnabled{ transform: scale(2); margin-right:12px; vertical-align:middle } /* チェック拡大 */
+#view-lottery input[type="number"]{width:160px;font-size:1.5em}
+#view-lottery .btn{border:none;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:1.2em}
+#view-lottery .btn.ghost{background:#1b1b1b;color:#fff;border:1px solid var(--border)}
+#view-lottery .btn.primary{background:#fff;color:#000}
+
 /* ===== ④ レイアウト作成 ===== */
   #view-layout { position:relative; }
   #view-layout .wrap{min-height:100%;display:flex;flex-direction:column;gap:14px}
@@ -353,6 +366,32 @@
       <button class="btn ghost" id="btnSsBack">戻る</button>
       <button class="btn primary" id="btnSsSave">保存</button>
       <button class="btn primary" id="btnSsTest">テスト</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 抽選設定（新規） ===== -->
+<section id="view-lottery" class="container hidden">
+  <div class="wrap">
+    <h1>抽選設定</h1>
+
+    <div class="card">
+      <div class="row">
+        <label><input type="checkbox" id="lotteryEnabled"> 有効</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <label for="lotteryEvery">抽選出現率</label>
+        <input id="lotteryEvery" type="number" min="1" step="1" />
+        <span>回に1回出現</span>
+      </div>
+    </div>
+
+    <div class="row right">
+      <button class="btn ghost" id="btnLotteryBack">戻る</button>
+      <button class="btn primary" id="btnLotterySave">保存</button>
     </div>
   </div>
 </section>
@@ -701,6 +740,42 @@ function forceRunFit(){
   const rows=cs.gridTemplateRows.split(' ').length||1;
   fitCellSize(cols, rows);
 }
+
+/* ===== 抽選設定：遷移＆保存 ===== */
+const LOTTERY_KEY = 'lottery.settings.v1';
+
+function gotoLottery(){ 
+  stopCamera(); 
+  loadLotteryUI(); 
+  show('view-lottery'); 
+}
+
+function loadLottery(){
+  try{ return JSON.parse(localStorage.getItem(LOTTERY_KEY) || '{}'); }catch{ return {}; }
+}
+
+function saveLottery(obj){
+  localStorage.setItem(LOTTERY_KEY, JSON.stringify(obj));
+}
+
+function loadLotteryUI(){
+  const s = loadLottery();
+  $('lotteryEnabled').checked = !!s.enabled;
+  $('lotteryEvery').value = Number.isFinite(s.every) && s.every >= 1 ? s.every : 10; // 既定値10
+}
+
+/* UIイベント */
+const btnLotteryBack = $('btnLotteryBack');
+if (btnLotteryBack) btnLotteryBack.addEventListener('click', gotoMain);
+
+const btnLotterySave = $('btnLotterySave');
+if (btnLotterySave) btnLotterySave.addEventListener('click', ()=>{
+  const enabled = $('lotteryEnabled').checked;
+  const every = Math.max(1, parseInt(($('lotteryEvery').value||'').trim(), 10) || 10);
+  saveLottery({ enabled, every });
+  alert('保存しました');
+  gotoMain();
+});
 
 /* ===== タイトル → メイン ===== */
 const loginBtn = $('btnTitleLogin');
