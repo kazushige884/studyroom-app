@@ -55,18 +55,26 @@
   /* ===== ③ メインメニュー ===== */
   #view-main .wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
    #view-main .title{font-size:40pt;margin:0 0 12px;align-self:flex-start}
-    #view-main .btn-row{display:flex;gap:var(--gap);width:100%;flex-wrap:wrap;justify-content:center;position:relative;z-index:5}
+    #view-main .btn-row{
+  display:flex; gap:var(--gap);
+  width:min(92vw, 800px);          /* ← 「レイアウト作成」と同じ幅 */
+  margin:0 auto;                   /* 中央寄せ */
+  justify-content:space-between;   /* 左右端を揃える */
+  flex-wrap:nowrap;                /* 1行に固定 */
+  position:relative; z-index:5;
+}
   /* ボタンの幅とフォントサイズの調整（上書き） */
 #view-main #btnGoSs,
-#view-main #btnGoLottery {
-  flex: 0 0 calc(10% - var(--gap));
+#view-main #btnGoLottery{
+  flex: 1 1 calc(50% - var(--gap)); /* ← 2つで基準幅いっぱい（左右端が揃う） */
   min-width: 0;
-  display: flex; align-items: center; justify-content: center;
-  white-space: normal !important;  /* ← 強制で改行許可 */
-  line-height: 1.2;
-  min-height: 120px;
-  padding: 12px 16px;
-  font-size: 24pt;
+  display:flex; align-items:center; justify-content:center;
+  white-space:nowrap;               /* ← 中で改行させない */
+  text-align:center;
+  line-height:1.2;
+  min-height:120px;
+  padding:12px 16px;
+  font-size:24pt;
 }
 
 /* 念押し：<br> を確実に改行として扱う */
@@ -127,8 +135,10 @@
     font-size:60pt;background:var(--blue);color:#000;padding:20px 60px;margin:12px 0; width:auto;
   }
   #view-main .btn-layout{
-    font-size:40pt;background:#fff;color:#000;padding:14px 40px;margin:12px 0; width:auto;
-  }
+  font-size:40pt;background:#fff;color:#000;padding:14px 40px;margin:12px 0;
+  width:min(92vw, 800px);          /* ← 基準幅 */
+  display:block; margin-left:auto; margin-right:auto;
+}
   #view-main .btn-ss,
 #view-main .btn-lottery{
   background:#fff;
@@ -750,8 +760,8 @@
     <button type="button" class="btn btn-start" id="btnGoRun">自習室開始</button>
 <button type="button" class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
 <div class="btn-row">
-  <button type="button" class="btn btn-ss" id="btnGoSs" onclick="gotoSs()">スライドショー<br>設定</button>
-<button type="button" class="btn btn-lottery" id="btnGoLottery" onclick="gotoLottery()">抽選<br>設定</button>
+  <button type="button" class="btn btn-ss" id="btnGoSs" onclick="gotoSs()">スライドショー設定</button>
+<button type="button" class="btn btn-lottery" id="btnGoLottery" onclick="gotoLottery()">抽選設定</button>
 </div>
 
     
