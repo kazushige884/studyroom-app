@@ -133,8 +133,14 @@
 }
   #view-main .btn{border:none;border-radius:14px;cursor:pointer;font-weight:800;display:block}
   #view-main .btn-start{
-    font-size:60pt;background:var(--blue);color:#000;padding:20px 60px;margin:12px 0; width:auto;
-  }
+  font-size:60pt;
+  background:var(--blue);
+  color:#000;
+  padding:20px 60px;
+  margin:12px 0;
+  width: calc(100% - 80px); /* ← btn-layout と同じ幅に揃える */
+  max-width: 600px;         /* 必要なら上限も指定 */
+}
   #view-main .btn-layout{
   font-size:40pt;background:#fff;color:#000;padding:14px 40px;margin:12px 0;
   width:min(92vw, 800px);          /* ← 基準幅 */
