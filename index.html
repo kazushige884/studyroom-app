@@ -82,11 +82,11 @@
 #view-main #btnGoLottery br { display: inline !important; }
 
 #view-main #btnGoSs {
-  transform: translateX(-20%);
+  transform: none;
 }
 
 #view-main #btnGoLottery {
-  transform: translateX(20%);
+  transform: none;
 }
 
 /* 「スライドショー設定」「抽選設定」— 改行せず通常表示 */
@@ -100,17 +100,10 @@
   position: static;
 }
 
-/* 「抽選設定」— 「設定」を改行表示（フォントサイズは共有値のまま） */
+/* 「抽選設定」— 擬似要素を使わず通常表示 */
 #view-main #btnGoLottery{
-  color: transparent;
-  position: relative;
-}
-#view-main #btnGoLottery::after{
-  content: "抽選\n設定";
-  white-space: pre;
   color: #000;
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
+  position: static;
 }
 
 /* スマホなど画面幅が狭い場合の調整 */
