@@ -680,9 +680,11 @@
 <!-- ▲ ここまで追加 -->
 
 <div class="row right">
-      <button class="btn ghost" id="btnLotteryBack">戻る</button>
-      <button class="btn primary" id="btnLotterySave">保存</button>
-    </div>
+  <button class="btn ghost" id="btnLotteryBack">戻る</button>
+  <button class="btn primary" id="btnLotteryLoad">呼出</button>
+  <button class="btn primary" id="btnLotterySave">保存</button>
+  <input id="lotteryOpenFile" type="file" accept=".json,application/json" style="display:none" />
+</div>
   </div>
 </section>
 
@@ -954,6 +956,99 @@ function loadLotteryUI(){
 /* UIイベント */
 const btnLotteryBack = $('btnLotteryBack');
 if (btnLotteryBack) btnLotteryBack.addEventListener('click', gotoMain);
+
+/* 抽選設定をUIから収集 → オブジェクト化 */
+function collectLotterySettings(){
+  const s = {
+    enabled: $('lotteryEnabled').checked,
+    every: parseInt($('lotteryEvery').value, 10) || 1,
+    items: []
+  };
+  for (let i = 1; i <= 10; i++) {
+    const idx2 = String(i).padStart(2,'0');
+    s.items.push({
+      on: !!$('lotOn'+idx2)?.checked,
+      name: ($('lotName'+idx2)?.value ?? ''),
+      // 「出現率」を「本数」に変更済みだが、既存ID lotRateXX を流用
+      rate: parseInt($('lotRate'+idx2)?.value ?? '0', 10) || 0
+    });
+  }
+  return s;
+}
+
+/* 抽選設定オブジェクトをUIに反映 */
+function applyLotterySettings(s){
+  try{
+    $('lotteryEnabled').checked = !!s.enabled;
+    $('lotteryEvery').value = Number.isFinite(s.every) && s.every >= 1 ? s.every : 1;
+    if (Array.isArray(s.items)){
+      for (let i = 1; i <= 10; i++){
+        const idx2 = String(i).padStart(2,'0');
+        const it = s.items[i-1] || {};
+        if ($('lotOn'+idx2))   $('lotOn'+idx2).checked = !!it.on;
+        if ($('lotName'+idx2)) $('lotName'+idx2).value   = it.name ?? '';
+        if ($('lotRate'+idx2)) $('lotRate'+idx2).value   = Number.isFinite(it.rate) ? it.rate : 0;
+      }
+    }
+    // 既存の比率表示更新（名称は変わったが再計算は動かしておく）
+    if (typeof updateLotPercentage === 'function') updateLotPercentage();
+  }catch(e){
+    alert('設定の反映に失敗しました: ' + (e?.message || e));
+  }
+}
+
+/* 保存：抽選設定をローカル（ダウンロード） */
+const btnLotterySave = $('btnLotterySave');
+if (btnLotterySave) btnLotterySave.addEventListener('click', ()=>{
+  const s = collectLotterySettings();
+  const json = JSON.stringify(s, null, 2);
+
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  const fileName = `${y}-${m}-${d}抽選設定.json`;
+
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+
+  // 必要ならローカルストレージにも保持
+  try{ saveLottery(s); }catch{}
+});
+
+/* 呼出：保存したJSONを読み込んで画面に適用 */
+const btnLotteryLoad = $('btnLotteryLoad');
+const lotteryOpenFile = $('lotteryOpenFile');
+
+if (btnLotteryLoad && lotteryOpenFile){
+  btnLotteryLoad.addEventListener('click', ()=> lotteryOpenFile.click());
+
+  lotteryOpenFile.addEventListener('change', async (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try{
+      const text = await f.text();
+      const s = JSON.parse(text);
+      // ざっくりバリデーション
+      if (!s || typeof s !== 'object' || !('enabled' in s)) {
+        throw new Error('抽選設定の形式ではありません');
+      }
+      applyLotterySettings(s);
+      // 任意：読み込んだ内容をストレージにも保存
+      try{ saveLottery(s); }catch{}
+      alert('抽選設定を読み込みました');
+    }catch(err){
+      alert('読み込みに失敗しました: ' + (err?.message || err));
+    }finally{
+      e.target.value = '';
+    }
+  });
+}
 
 // ＋／ー スピンボタン（抽選出現率を整数で増減）
 document.addEventListener('click', (e)=>{
