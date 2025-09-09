@@ -790,51 +790,7 @@ if (loginBtn) {
   });
 }
 
-// 抽選設定（画面へ遷移 & 保存）
-const LOTTERY_KEY = 'lottery.settings.v1';
 
-function gotoLottery(){ stopCamera(); loadLotteryUI(); show('view-lottery'); }
-
-const btnGoLottery = $('btnGoLottery');
-if (btnGoLottery) btnGoLottery.addEventListener('click', gotoLottery);
-
-// 保存/読込
-function loadLottery(){
-  try{ return JSON.parse(localStorage.getItem(LOTTERY_KEY) || '[]'); }catch{ return []; }
-}
-function saveLottery(arr){
-  localStorage.setItem(LOTTERY_KEY, JSON.stringify(arr));
-}
-
-// UIへ反映
-function loadLotteryUI(){
-  const arr = loadLottery();
-  for(let i=1;i<=10;i++){
-    const n = $('lotName'+i), r = $('lotRate'+i);
-    const row = arr[i-1] || {};
-    if(n) n.value = row.name || '';
-    if(r) r.value = (row.rate ?? '');
-  }
-}
-
-// UIから保存
-function saveLotteryUI(){
-  const arr = [];
-  for(let i=1;i<=10;i++){
-    const n = $('lotName'+i)?.value?.trim() || '';
-    const rRaw = $('lotRate'+i)?.value;
-    const rate = (rRaw === '' || rRaw == null) ? null : Number(rRaw);
-    arr.push({ name:n, rate: rate });
-  }
-  saveLottery(arr);
-  alert('抽選設定を保存しました');
-}
-
-// ボタン
-const lotteryBack = $('lotteryBack');
-const lotterySave = $('lotterySave');
-if (lotteryBack) lotteryBack.addEventListener('click', gotoMain);
-if (lotterySave) lotterySave.addEventListener('click', saveLotteryUI);
 /* ===== メインメニューの遷移（イベント委譲方式） ===== */
 document.addEventListener('click', (e)=>{
   const t = e.target.closest('button');
@@ -852,8 +808,8 @@ document.addEventListener('click', (e)=>{
     gotoSs();
   }
   else if (t.id === 'btnGoLottery') {
-    alert('抽選設定は準備中です。');
-  }
+  gotoLottery();
+}
 }, { passive:true });
 
 /* ===== 履歴CSV ＆ メール下書き ===== */
