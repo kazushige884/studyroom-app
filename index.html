@@ -418,6 +418,25 @@
   width: auto;          /* 幅を固定せずに自然に配置 */
 }
 
+/* ── 抽選設定（#view-lottery） 行間を詰める ───────────────── */
+#view-lottery .row{
+  display:flex;
+  align-items:center;
+  gap:4px;           /* ← ラベルと入力枠の“間”を最小限に */
+  flex-wrap:wrap;
+}
+/* 「名称」など行内の短いテキストの直後の余白を小さめに */
+#view-lottery .row span{ margin-right:2px; }
+
+/* 入力枠の縦サイズは従来そのまま（※高さは前回指定を維持）*/
+/* 幅は詰めたい行の折返しを防ぐため、必要に応じて短め */
+#view-lottery input[type="text"],
+#view-lottery input[type="number"]{
+  /* もし広すぎて改行する場合は下の width を有効化（例：8〜10ch） */
+  /* width: 9ch; */
+}
+
+/* ───────────────────────────────────────────── */
 </style>
 </head>
 <body>
