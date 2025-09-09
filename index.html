@@ -405,6 +405,19 @@
   margin-right: 12px;
   vertical-align: middle;
 }
+/* 抽選設定：ラベルと入力欄の間隔を詰める */
+#view-lottery .row label {
+  min-width: auto;      /* 固定幅を解除 */
+  margin-right: 4px;    /* 少しだけ余白を残す */
+  font-size: 1em;
+  line-height: 1.5;
+}
+
+#view-lottery .row input[type="text"] {
+  flex: 1;              /* 可能な範囲で広がる */
+  width: auto;          /* 幅を固定せずに自然に配置 */
+}
+
 </style>
 </head>
 <body>
