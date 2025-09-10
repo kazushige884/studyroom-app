@@ -571,6 +571,29 @@
   border-radius:10px; border:1px solid #444; background:#111; color:#fff;
   padding:8px 12px; cursor:pointer; font-weight:700;
 }
+
+/* ===== 抽選結果オーバーレイ ===== */
+#lotteryResult{
+  position:fixed; inset:0; z-index:10001;
+  background:#fff; color:#d32f2f;
+  display:none; align-items:center; justify-content:center;
+}
+#lotteryResult .inner{
+  position:relative; width:min(92vw,1000px); text-align:center;
+}
+#lotteryResult .name{
+  font-size:clamp(48px, 10vw, 140px);
+  font-weight:900; color:#d32f2f; margin:0 0 .2em;
+}
+#lotteryResult .msg{
+  font-size:clamp(18px, 3.3vw, 48px);
+  color:#d32f2f;
+}
+#lotteryResult .back{
+  position:fixed; right:18px; bottom:18px;
+  border-radius:10px; border:1px solid #444; background:#111; color:#fff;
+  padding:10px 16px; cursor:pointer; font-weight:800;
+}
 </style>
 </head>
 <body>
@@ -1052,6 +1075,37 @@ function loadLotteryUI(){
 
 /* ===== 抽選動画：出現判定＆再生 ===== */
 
+/** 有効なアイテムから rate（本数）加重で1つ抽選して名称を返す。無ければ null */
+function pickLotteryWinner(){
+  const s = loadLotterySettingsRaw();
+  const items = (s.items || [])
+    .filter(it => it && it.on && (it.rate|0) > 0 && String(it.name||'').trim() !== '');
+  if (items.length === 0) return null;
+  const total = items.reduce((t, it) => t + (it.rate|0), 0);
+  let r = Math.random() * total;
+  for (const it of items){
+    r -= (it.rate|0);
+    if (r <= 0) return String(it.name);
+  }
+  return String(items[items.length - 1].name);
+}
+
+/** 結果画面を表示して「戻る」で受付へ */
+function showLotteryResult(name){
+  const wrap = document.getElementById('lotteryResult');
+  const nameEl = document.getElementById('lotteryResultName');
+  const back = document.getElementById('lotteryResultBack');
+  if (!wrap || !nameEl || !back) return;
+
+  nameEl.textContent = name || '残念！ハズレ';
+  wrap.style.display = 'flex';
+
+  back.onclick = () => {
+    wrap.style.display = 'none';
+    gotoRun();
+  };
+}
+
 /** 抽選設定（ローカルストレージ）を読む */
 function loadLotterySettingsRaw(){
   try{ return JSON.parse(localStorage.getItem('lottery.settings.v1')||'{}'); }
@@ -1071,36 +1125,41 @@ function shouldTriggerLottery(every){
 }
 
 /** 実際に動画を全画面再生する */
+/** 実際に動画を全画面再生する（終了後に結果表示） */
 function playLotteryVideo(){
   const wrap = document.getElementById('lotteryOverlay');
   const vid  = document.getElementById('lotteryVideo');
   const skip = document.getElementById('lotterySkip');
   if(!wrap || !vid) return;
 
+  // 事前に結果を決めておく（スキップ時も同じ結果を出す）
+  const winnerName = pickLotteryWinner();
+
   // 準備
   vid.src = LOTTERY_VIDEO_URL;
   vid.currentTime = 0;
-  vid.muted = false;                // ブラウザの自動再生ポリシーで音が出ない場合は true に
+  vid.muted = false;          // 自動再生がブロックされる環境では後でミュート再試行
   vid.controls = false;
   wrap.style.display = 'flex';
 
-  const close = ()=>{
+  const showResult = ()=>{
     try{ vid.pause(); }catch{}
-    vid.removeAttribute('src');     // バッファ解放
+    vid.removeAttribute('src'); // バッファ解放
     vid.load();
     wrap.style.display = 'none';
+    showLotteryResult(winnerName);
   };
-  // 終了/エラー/手動閉じ
-  vid.onended = close;
-  vid.onerror = close;
-  skip.onclick = close;
-  // 画面クリックでも閉じられるように（動画の上は除外）
-  wrap.onclick = (e)=>{ if(e.target === wrap) close(); };
+
+  // 終了/エラー/手動閉じ → 結果表示へ
+  vid.onended = showResult;
+  vid.onerror = showResult;
+  if (skip) skip.onclick = showResult;
+  wrap.onclick = (e)=>{ if(e.target === wrap) showResult(); }; // 背景クリックでも
 
   // 再生（音声がブロックされたらミュートで再試行）
   vid.play().catch(()=>{
     vid.muted = true;
-    vid.play().catch(()=>{ /* それでもダメなら静かに閉じる */ close(); });
+    vid.play().catch(()=>{ showResult(); });
   });
 }
 
@@ -2770,7 +2829,14 @@ gotoTitle();
   </button>
 </div>
 
-
+<!-- 抽選結果オーバーレイ -->
+<div id="lotteryResult" role="dialog" aria-modal="true" aria-label="抽選結果">
+  <div class="inner">
+    <div id="lotteryResultName" class="name">サンプル賞</div>
+    <div class="msg">が当たりました！</div>
+  </div>
+  <button id="lotteryResultBack" class="back">戻る</button>
+</div>
 
 </body>
 </html>
