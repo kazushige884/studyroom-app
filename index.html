@@ -989,7 +989,7 @@ const BGM_SITE   = 'https://superlative-bienenstitch-e300de.netlify.app';
 const BGM_FN_BASE = `${BGM_SITE}/.netlify/functions`;
 /* ===== 抽選動画：設定 ===== */
 /* 再生する MP4 の URL を指定してください（ローカル配置でも可） */
-const LOTTERY_VIDEO_URL = './lottery.mp4'; // 例: public 配下に置く
+const LOTTERY_VIDEO_URL = '/videos/lottery.mp4'; // 例: public 配下に置く
 const LOTTERY_COUNT_KEY = 'lottery.leaveCount.v1';
 /* ===== 共通キー・ユーティリティ ===== */
 const KEY_LAYOUT='studyroom-layout-v7', KEY_NAME='studyroom-name-v7', KEY_UNLOCK='unlock-pw';
@@ -2759,9 +2759,15 @@ async function previewAndPick(it){
 gotoTitle();
 </script>
 <!-- 抽選動画オーバーレイ -->
-<div id="lotteryOverlay" role="dialog" aria-modal="true" aria-label="抽選動画">
-  <video id="lotteryVideo" playsinline preload="auto"></video>
-  <button id="lotterySkip">閉じる</button>
+<div id="lotteryOverlay" role="dialog" aria-modal="true" aria-label="抽選動画" style="display:none; position:fixed; inset:0; background:#000; z-index:10000; align-items:center; justify-content:center;">
+  <video id="lotteryVideo"
+         src="/videos/lottery.mp4"
+         playsinline preload="auto"
+         style="max-width:100%; max-height:100%; width:100%; height:100%; object-fit:contain;"></video>
+  <button id="lotterySkip"
+          style="position:absolute; right:18px; top:14px; border-radius:10px; border:1px solid #444; background:#111; color:#fff; padding:8px 12px; cursor:pointer; font-weight:700;">
+    閉じる
+  </button>
 </div>
 
 
