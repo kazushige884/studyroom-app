@@ -557,6 +557,20 @@
   width: 7ch;
   min-width: 7ch;
 }
+/* ===== 抽選動画オーバーレイ ===== */
+#lotteryOverlay{
+  position:fixed; inset:0; z-index:10000;
+  background:#000; display:none; align-items:center; justify-content:center;
+}
+#lotteryOverlay video{
+  max-width:100vw; max-height:100vh; width:100%; height:100%;
+  object-fit:contain;
+}
+#lotterySkip{
+  position:absolute; right:18px; top:14px;
+  border-radius:10px; border:1px solid #444; background:#111; color:#fff;
+  padding:8px 12px; cursor:pointer; font-weight:700;
+}
 </style>
 </head>
 <body>
@@ -910,6 +924,16 @@
     </div>
   </div>
 </div>
+<!-- 入退室 確認モーダル -->
+<div id="confirmDlg" role="dialog" aria-modal="true" aria-label="確認" style="display:none; align-items:center; justify-content:center;">
+  <div class="cbox">
+    <div id="confirmMsg" class="msg">12345678　利用を開始しますか？</div>
+    <div class="btns" style="display:flex;gap:10px;justify-content:flex-end">
+      <button id="confirmCancel" class="btn">キャンセル</button>
+      <button id="confirmOk" class="btn primary">OK</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== スライドショー オーバーレイ ===== -->
 <div id="ssOverlay">
@@ -959,12 +983,14 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <script>
-/* ===== 固定：BGM管理アプリ Functions ベースURL ===== */
-const BGM_API_BASE = 'https://superlative-bienenstitch-e300de.netlify.app/.netlify/functions';
+
 /* ===== 固定：BGM管理アプリ Functions ベースURL ===== */
 const BGM_SITE   = 'https://superlative-bienenstitch-e300de.netlify.app';
 const BGM_FN_BASE = `${BGM_SITE}/.netlify/functions`;
-
+/* ===== 抽選動画：設定 ===== */
+/* 再生する MP4 の URL を指定してください（ローカル配置でも可） */
+const LOTTERY_VIDEO_URL = './lottery.mp4'; // 例: public 配下に置く
+const LOTTERY_COUNT_KEY = 'lottery.leaveCount.v1';
 /* ===== 共通キー・ユーティリティ ===== */
 const KEY_LAYOUT='studyroom-layout-v7', KEY_NAME='studyroom-name-v7', KEY_UNLOCK='unlock-pw';
 const KEY_HISTORY='usage-history-v1';
@@ -1024,6 +1050,70 @@ function loadLotteryUI(){
   $('lotteryEvery').value = Number.isFinite(s.every) && s.every >= 1 ? s.every : 10; // 既定値10
 }
 
+/* ===== 抽選動画：出現判定＆再生 ===== */
+
+/** 抽選設定（ローカルストレージ）を読む */
+function loadLotterySettingsRaw(){
+  try{ return JSON.parse(localStorage.getItem('lottery.settings.v1')||'{}'); }
+  catch{ return {}; }
+}
+
+/** 「通常退室」をカウントし、every 回に1回 → true を返す
+ *  every<=1 は毎回 true
+ */
+function shouldTriggerLottery(every){
+  if(!Number.isFinite(every) || every<=1) return true;
+  let c = parseInt(localStorage.getItem(LOTTERY_COUNT_KEY)||'0',10);
+  c = Number.isFinite(c) ? c : 0;
+  c += 1;
+  localStorage.setItem(LOTTERY_COUNT_KEY, String(c));
+  return (c % every) === 0;
+}
+
+/** 実際に動画を全画面再生する */
+function playLotteryVideo(){
+  const wrap = document.getElementById('lotteryOverlay');
+  const vid  = document.getElementById('lotteryVideo');
+  const skip = document.getElementById('lotterySkip');
+  if(!wrap || !vid) return;
+
+  // 準備
+  vid.src = LOTTERY_VIDEO_URL;
+  vid.currentTime = 0;
+  vid.muted = false;                // ブラウザの自動再生ポリシーで音が出ない場合は true に
+  vid.controls = false;
+  wrap.style.display = 'flex';
+
+  const close = ()=>{
+    try{ vid.pause(); }catch{}
+    vid.removeAttribute('src');     // バッファ解放
+    vid.load();
+    wrap.style.display = 'none';
+  };
+  // 終了/エラー/手動閉じ
+  vid.onended = close;
+  vid.onerror = close;
+  skip.onclick = close;
+  // 画面クリックでも閉じられるように（動画の上は除外）
+  wrap.onclick = (e)=>{ if(e.target === wrap) close(); };
+
+  // 再生（音声がブロックされたらミュートで再試行）
+  vid.play().catch(()=>{
+    vid.muted = true;
+    vid.play().catch(()=>{ /* それでもダメなら静かに閉じる */ close(); });
+  });
+}
+
+/** 通常退室後に抽選動画再生を評価 */
+function tryPlayLotteryAfterNormalLeave(){
+  const s = loadLotterySettingsRaw();
+  const enabled = !!s.enabled;
+  const every   = Number.isFinite(s.every) ? s.every : 1;
+  if(!enabled) return;              // 有効でなければ終了
+  if(shouldTriggerLottery(every)){  // 出現モード
+    playLotteryVideo();
+  }
+}
 /* UIイベント */
 const btnLotteryBack = $('btnLotteryBack');
 if (btnLotteryBack) btnLotteryBack.addEventListener('click', gotoMain);
@@ -1561,6 +1651,8 @@ btnDoLeave.addEventListener('click', ()=>{
   closeSeatOps(); renderRun(); setTimeout(forceRunFit, 16);
 });
 
+
+
 /* ===== ⑥ スキャン（入室/退出） ===== */
 let scanMode='enter'; // 'enter' or 'leave'
 let lastScannedValue = '';
@@ -1651,8 +1743,10 @@ if (confirmOkBtn) confirmOkBtn.addEventListener('click', ()=>{
       pushLog({ uid, action:'leave', seatNo, method:lastInputMethod, roomPrefix: String(uid).slice(0,3), star:false });
       seatState[seatNo] = false;
       saveSeatState();
+      tryPlayLotteryAfterNormalLeave();  // ★ 通常退室後：抽選動画の判定＆再生
       gotoRun();
     }
+    
   }
 });
 function openConfirmWithValue(v){
@@ -2661,7 +2755,16 @@ async function previewAndPick(it){
 }
 
 /* 初期表示：①タイトル */
+
 gotoTitle();
 </script>
+<!-- 抽選動画オーバーレイ -->
+<div id="lotteryOverlay" role="dialog" aria-modal="true" aria-label="抽選動画">
+  <video id="lotteryVideo" playsinline preload="auto"></video>
+  <button id="lotterySkip">閉じる</button>
+</div>
+
+
+
 </body>
 </html>
