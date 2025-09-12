@@ -142,9 +142,16 @@
   max-width: 600px;         /* 必要なら上限も指定 */
 }
   #view-main .btn-layout{
-  font-size:40pt;background:#fff;color:#000;padding:14px 40px;margin:12px 0;
-  width:min(92vw, 800px);          /* ← 基準幅 */
-  display:block; margin-left:auto; margin-right:auto;
+  font-size:40pt;
+  background:#fff;
+  color:#000;
+  padding:20px 60px;               /* 自習室開始と同じ */
+  margin:12px 0;
+  width: calc(100% - 80px);        /* 自習室開始と同じ左右ライン */
+  max-width: 600px;                /* 自習室開始と同じ上限 */
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
 }
   #view-main .btn-ss,
 #view-main .btn-lottery{
@@ -310,7 +317,23 @@
   #infoDlg .btns .btn{font-size:20px;padding:10px 18px}
 
   /* ======= スライドショー（全画面） ======= */
-  #ssOverlay{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:9999;cursor:none;pointer-events:none}
+  #ssOverlay{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:2147483647;   /* ← 最大級に */
+  cursor:default;
+  pointer-events:all;   /* ← 明示 */
+  touch-action:none;    /* ← iOS のスワイプ系を封じる */
+}
+#ssOverlay::before{
+  content:"";
+  position:absolute;
+  inset:0;             /* 透明の全面ヒットエリア（隙間を埋める）*/
+}
   #ssStage{position:relative;width:100vw;height:100vh;overflow:hidden;background:#000}
   .ssLayer{position:absolute;inset:0;opacity:0;transition:opacity 1200ms ease}
   .ssLayer.show{opacity:1}
@@ -801,11 +824,13 @@
   <div class="wrap">
     <h1 class="title">自習室管理メインメニュー</h1>
 
-    <button type="button" class="btn btn-start" id="btnGoRun">自習室開始</button>
-<button type="button" class="btn btn-layout" id="btnGoLayout">レイアウト作成</button>
+    <div class="btn-row">
+  <button type="button" class="btn btn-start fullwidth" id="btnGoRun">自習室開始</button>
+  <button type="button" class="btn btn-layout fullwidth" id="btnGoLayout">レイアウト作成</button>
+</div>
 <div class="btn-row">
   <button type="button" class="btn btn-ss" id="btnGoSs" onclick="gotoSs()">スライドショー設定</button>
-<button type="button" class="btn btn-lottery" id="btnGoLottery" onclick="gotoLottery()">抽選設定</button>
+  <button type="button" class="btn btn-lottery" id="btnGoLottery" onclick="gotoLottery()">抽選設定</button>
 </div>
 
     
@@ -1053,10 +1078,16 @@ function forceRunFit(){
 /* ===== 抽選設定：遷移＆保存 ===== */
 const LOTTERY_KEY = 'lottery.settings.v1';
 
-function gotoLottery(){ 
-  stopCamera(); 
-  loadLotteryUI(); 
-  show('view-lottery'); 
+function gotoLottery(){
+  stopCamera();
+  // 保存済みをすべてUIへ反映
+  applyLotterySettings(loadLottery());
+  // 画面表示
+  show('view-lottery');
+  // 監視を一度だけ張る（重複防止）
+  setupLotteryAutosave();
+  // 初回の当選確率表示
+  updateLotPercentage();
 }
 
 function loadLottery(){
@@ -1068,9 +1099,8 @@ function saveLottery(obj){
 }
 
 function loadLotteryUI(){
-  const s = loadLottery();
-  $('lotteryEnabled').checked = !!s.enabled;
-  $('lotteryEvery').value = Number.isFinite(s.every) && s.every >= 1 ? s.every : 10; // 既定値10
+  // 互換のため残しますが、今後は applyLotterySettings を直接使います
+  applyLotterySettings(loadLottery());
 }
 
 /* ===== 抽選動画：出現判定＆再生 ===== */
@@ -1326,15 +1356,58 @@ function updateLotPercentage(){
   });
 }
 
-// チェック／入力が変わったら再計算
-for (let i = 1; i <= 10; i++){
-  const idx2 = String(i).padStart(2,'0');
-  const on = document.getElementById(`lotOn${idx2}`);
-  const rateEl = document.getElementById(`lotRate${idx2}`) || document.getElementById(`lotRate${i}`);
-  if (on) on.addEventListener('change', updateLotPercentage);
-  if (rateEl) rateEl.addEventListener('input', updateLotPercentage);
+// ===== 抽選設定：オートセーブ（デバウンス付き） =====
+let __lotteryAutosaveInited = false;
+
+function debounce(fn, ms){
+  let t = null;
+  return function(...args){
+    clearTimeout(t);
+    t = setTimeout(()=>fn.apply(this, args), ms);
+  };
 }
-document.addEventListener('DOMContentLoaded', updateLotPercentage);
+const autosaveLottery = debounce(()=>{
+  try{
+    const s = collectLotterySettings();
+    saveLottery(s);
+  }catch(e){
+    // 保存失敗は無視（ストレージ満杯等）
+    console.warn('lottery autosave failed:', e);
+  }
+}, 150);
+
+function setupLotteryAutosave(){
+  if (__lotteryAutosaveInited) return;
+  __lotteryAutosaveInited = true;
+
+  // 監視対象：有効フラグ＆出現率
+  const baseIds = ['lotteryEnabled', 'lotteryEvery'];
+  // 監視対象：アタリ01〜10（チェック・名称・本数）
+  for (let i = 1; i <= 10; i++){
+    const idx2 = String(i).padStart(2, '0');
+    baseIds.push(`lotOn${idx2}`, `lotName${idx2}`, `lotRate${idx2}`);
+  }
+
+  baseIds.forEach(id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // 入力系は input/change で拾う
+    const handler = ()=>{
+      updateLotPercentage(); // 表示も即時更新
+      autosaveLottery();     // デバウンス保存
+    };
+
+    // 型ごとに最適イベントを張る（両方張ってもOK）
+    el.addEventListener('input', handler);
+    el.addEventListener('change', handler);
+  });
+}
+
+// 初回ロード直後の当選確率表示
+document.addEventListener('DOMContentLoaded', ()=>{
+  updateLotPercentage();
+});
 
 /* ===== タイトル → メイン ===== */
 const loginBtn = $('btnTitleLogin');
@@ -2064,7 +2137,74 @@ let ssAudio = null;
 let __bgmIndex = -1; // 直前に再生したインデックス（連続同一回避用）
 const ssOverlay = $('ssOverlay'), ssLayerA=$('ssLayerA'), ssLayerB=$('ssLayerB');
 let ssIndex=0, ssShowingA=true, ssRunning=false;
-let ssOrder = [];      // 再生順インデックス配列（ランダム）
+let __prevViewId = null;
+
+function currentViewId(){
+  const v = document.querySelector('section.container:not(.hidden)');
+  return v ? v.id : null;
+}
+
+// === [FIX] 終了ハンドラを一本化（クリック／タップ／キーで完全停止） ===
+let __onPointerExit = null;
+let __onKeydownExit  = null;
+
+function attachSlideExitHandlers(){
+  if (__onPointerExit || __onKeydownExit) return; // 二重張り防止
+
+  __onPointerExit = (e)=>{
+    try{
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation(); // ← 追加
+    }catch{}
+    stopSlideShow(true);
+    resetIdleTimer();
+  };
+  __onKeydownExit = (e)=>{
+    try{
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation(); // ← 追加
+    }catch{}
+    stopSlideShow(true);
+    resetIdleTimer();
+  };
+
+  // オーバーレイ自身（capture先取り）
+  ssOverlay.addEventListener('click',       __onPointerExit, true);
+  ssOverlay.addEventListener('touchstart',  __onPointerExit, { capture:true, passive:false });
+  ssOverlay.addEventListener('pointerdown', __onPointerExit, true);
+
+  // 念押し：document 全体にも（他所で捕捉されても下へ行かせない）
+  document.addEventListener('click',       __onPointerExit, true);
+  document.addEventListener('touchstart',  __onPointerExit, { capture:true, passive:false });
+  document.addEventListener('pointerdown', __onPointerExit, true);
+
+  // キー入力
+  document.addEventListener('keydown', __onKeydownExit, true);
+}
+
+function detachSlideExitHandlers(){
+  if (__onPointerExit){
+    // overlay 側
+    ssOverlay.removeEventListener('click',       __onPointerExit, true);
+    ssOverlay.removeEventListener('touchstart',  __onPointerExit, true);
+    ssOverlay.removeEventListener('pointerdown', __onPointerExit, true);
+    // document 側
+    document.removeEventListener('click',       __onPointerExit, true);
+    document.removeEventListener('touchstart',  __onPointerExit, true);
+    document.removeEventListener('pointerdown', __onPointerExit, true);
+    __onPointerExit = null;
+  }
+  if (__onKeydownExit){
+    document.removeEventListener('keydown', __onKeydownExit, true);
+    __onKeydownExit = null;
+  }
+}
+
+let ssOrder = [];        // 再生順インデックス配列（ランダム）
+let ssReturnToId = null; // スライドショー終了時の復帰先ビュー
+
 let ssFirstFrame = true; // 初回フレームは画像ロード完了を待ってからフェード
 let ssNextTid = null;  // 次コマ予約タイマー（停止/再実行時に確実にクリア）
 
@@ -2374,8 +2514,21 @@ function startSlideShow(force=false){
     playRandomBgm();
   }
 
-  // 初回はロード完了後にオーバーレイ表示＆フェード
-  showNext(true);
+  // 前画面IDを保存し、オーバーレイを即表示して入力を受け止める
+ssReturnToId = currentViewId();
+ssOverlay.style.display = 'flex';
+ssOverlay.style.pointerEvents = 'all';  // 明示
+
+// ← ここから追記
+if (!ssOverlay.hasAttribute('tabindex')) ssOverlay.setAttribute('tabindex','-1');
+try { ssOverlay.focus({ preventScroll:true }); } catch {}
+document.body.style.overflow = 'hidden';  // 背面のスクロール/ジェスチャを封印
+
+// 終了ハンドラ（タップ/クリック/キー入力）を一時的に付与
+attachSlideExitHandlers();
+
+// 初回はロード完了後にオーバーレイ表示＆フェード
+showNext(true);
 }
 function playRandomBgm(){
   if (!ssBgmList || ssBgmList.length===0 || !ssAudio) return;
@@ -2396,20 +2549,49 @@ function playRandomBgm(){
   ssAudio.currentTime = 0;
   ssAudio.play().catch(()=>{ /* iOS挙動差で失敗しても次に再試行 */ });
 }
-function stopSlideShow(){
+function stopSlideShow(restore=false){
   if (ssNextTid){ clearTimeout(ssNextTid); ssNextTid = null; }
-  if (!ssRunning) return;
-  ssRunning = false;
-  ssOverlay.style.display = 'none';
-  ssLayerA.innerHTML = '';
-  ssLayerB.innerHTML = '';
 
-  // ★ メディアURLは解放しない（再テストで再利用するため）
+  // 二重呼び出しでも安全に
+  if (ssRunning){
+    ssRunning = false;
+  }
+
+  // 入力ハンドラ解除
+  detachSlideExitHandlers();
+
+  // BGM 停止（iOS/Safari 含め確実に）
+if (ssAudio){
+  try{ ssAudio.pause(); }catch{}
+  try{ ssAudio.removeAttribute('src'); ssAudio.load(); }catch{}
+}
+
+  // オーバーレイ内の video を確実停止（念のため）
+  try{
+    ssOverlay.querySelectorAll('video').forEach(v=>{
+      try{ v.pause(); v.currentTime = 0; }catch{}
+    });
+  }catch{}
+
+  // 表示とレイヤーをクリーンアップ
+  if (ssOverlay){
+    ssOverlay.style.pointerEvents = 'none';
+    ssOverlay.style.display = 'none';
+  }
+  if (ssLayerA) ssLayerA.innerHTML = '';
+  if (ssLayerB) ssLayerB.innerHTML = '';
+
+  // メディアURLは保持（次回テストで再利用）
   __currentObjectUrl = null;
 
-  if (ssAudio){ try{ ssAudio.pause(); }catch{} }
+  // 前画面へ復帰
+  if (restore && ssReturnToId){
+    show(ssReturnToId);
+  }
+  ssReturnToId = null;
+document.body.style.overflow = '';   // 封印解除
 }
-ssOverlay.addEventListener('click', ()=>{ stopSlideShow(); resetIdleTimer(); });
+// click/touch/keydown は attachSlideExitHandlers() で動的に付与します
 function showNext(first=false){
   if (!ssRunning) return;
 
