@@ -56,11 +56,13 @@
   #view-main .wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
    #view-main .title{font-size:40pt;margin:0 0 12px;align-self:flex-start}
     #view-main .btn-row{
-  display:flex; gap:var(--gap);
-  width:min(92vw, 800px);          /* ← 「レイアウト作成」と同じ幅 */
-  margin:0 auto;                   /* 中央寄せ */
-  justify-content:space-between;   /* 左右端を揃える */
-  flex-wrap:nowrap;                /* 1行に固定 */
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  width:min(92vw, 800px);
+  margin:0 auto;
+  justify-content:flex-start;
+  flex-wrap:nowrap;
   position:relative; z-index:5;
 }
   /* ボタンの幅とフォントサイズの調整（上書き） */
@@ -91,7 +93,7 @@
 
 /* 「スライドショー設定」「抽選設定」— 改行せず通常表示 */
 #view-main #btnGoSs{
-  font-size: calc(24pt * 0.8);
+  font-size: 24pt;
   color: #000;
   position: static;
 }
@@ -108,24 +110,24 @@
 
 /* スマホなど画面幅が狭い場合の調整 */
 @media (max-width:980px) {
-  /* メインメニュー下段ボタン（スライドショー設定・抽選設定）の幅を上段と揃える */
 #view-main .btn-row {
   display: flex;
-  justify-content: space-between;
-  gap: var(--gap);
+  flex-direction: column;
+  gap: 18px;
   width: 100%;
-  max-width: 600px;   /* ← 上段ボタンに合わせる */
+  max-width: 600px;
   margin: 0 auto;
 }
 
 #view-main #btnGoSs,
 #view-main #btnGoLottery {
-  flex: 1 1 48%;       /* 横幅を均等に広げる */
+  flex: 1 1 auto;
   font-size: 24pt;
-  min-height: 80px;   /* 高さを上段と揃える */
-  white-space: nowrap; /* 改行させない */
+  min-height: 80px;    /* 2/3 高さを維持 */
+  white-space: nowrap;
 }
-  #view-main #btnGoSs{ font-size: 24pt ; } /* SSだけ80% */
+
+  #view-main #btnGoSs{ font-size: 22pt; } /* SSをLotteryと同等に */
 }
   #view-main .btn-lottery{
   font-size:32pt;background:#fff;color:#000;padding:12px 36px;margin:12px 0;width:auto;
@@ -137,18 +139,18 @@
   background:var(--blue);
   color:#000;
   padding:20px 60px;
-  margin:16px 0;
-  width: calc(100% - 80px); /* ← btn-layout と同じ幅に揃える */
-  max-width: 600px;         /* 必要なら上限も指定 */
+  margin:0;
+  width: calc(100% - 80px);
+  max-width: 600px;
 }
   #view-main .btn-layout{
   font-size:40pt;
   background:#fff;
   color:#000;
-  padding:20px 60px;               /* 自習室開始と同じ */
-  margin:16px 0;
-  width: calc(100% - 80px);        /* 自習室開始と同じ左右ライン */
-  max-width: 600px;                /* 自習室開始と同じ上限 */
+  padding:20px 60px;
+  margin:0;
+  width: calc(100% - 80px);
+  max-width: 600px;
   display:block;
   margin-left:auto;
   margin-right:auto;
@@ -157,13 +159,14 @@
 #view-main .btn-lottery{
   background:#fff;
   color:#000;
-  margin:16px 0;
+  margin:0;
   width:auto;
-  padding:12px 36px;              /* 同じ余白に統一 */
-  min-height:80px;                /* ← 高さを同一にする基準 */
+  padding:12px 36px;
+  min-height:80px;                /* 2/3 高さ = 80px を明示 */
   display:flex;
   align-items:center;
   justify-content:center;
+  font-size:24pt;                 /* フォントサイズを明示して両者を同一に */
 }
   #view-main .row{display:flex;flex-direction:row;align-items:center;gap:16px;margin:12px 0;flex-wrap:wrap}
   #view-main .row label{font-size:28pt}
