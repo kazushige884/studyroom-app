@@ -1284,11 +1284,13 @@ function playLotteryVideo(){
         pushLog({
           uid,
           action: 'leave',
-          seatNo: '',
+          seatNo: __lastLeaveSeatNo || '',
           method: 'auto',
           roomPrefix: uid ? uid.slice(0,3) : '',
           star: winner.code
         });
+        // 使い終わったらクリア
+        __lastLeaveSeatNo = null;
       }catch{}
       showLotteryResult(winner.name);
     }else{
@@ -1903,6 +1905,7 @@ btnDoLeave.addEventListener('click', ()=>{
 let scanMode='enter'; // 'enter' or 'leave'
 let lastScannedValue = '';
 let lastInputMethod = 'qr'; // 'qr' | 'input'
+let __lastLeaveSeatNo = null; // 直前の退室で使っていた座席No（抽選送信用）
 const video=$('video'), statusEl=$('status'), resultEl=$('result'), errEl=$('err'),
       restartBtn=$('restart'), switchBtn=$('switchCam'), idInput=$('idInput'), okBtn=$('okBtn'), okNote=$('okNote'),
       overlay=$('overlay'), guide=$('guide');
@@ -1987,6 +1990,8 @@ if (confirmOkBtn) confirmOkBtn.addEventListener('click', ()=>{
     } else {
       addHistoryOnLeave(uid, new Date(), false);
       pushLog({ uid, action:'leave', seatNo, method:lastInputMethod, roomPrefix: String(uid).slice(0,3), star:false });
+      // 抽選で送るために「退室時に使っていた座席」を保持しておく
+      __lastLeaveSeatNo = seatNo;
       seatState[seatNo] = false;
       saveSeatState();
       tryPlayLotteryAfterNormalLeave();  // ★ 通常退室後：抽選動画の判定＆再生
