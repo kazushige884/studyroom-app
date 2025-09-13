@@ -1201,16 +1201,22 @@ function loadLotteryUI(){
 /** 有効なアイテムから rate（本数）加重で1つ抽選して名称を返す。無ければ null */
 function pickLotteryWinner(){
   const s = loadLotterySettingsRaw();
-  const items = (s.items || [])
+  const raw = (s.items || []);
+  const items = raw
+    .map((it, i) => ({ ...it, __idx: i+1 })) // 1〜10 → 景品No
     .filter(it => it && it.on && (it.rate|0) > 0 && String(it.name||'').trim() !== '');
   if (items.length === 0) return null;
+
   const total = items.reduce((t, it) => t + (it.rate|0), 0);
   let r = Math.random() * total;
   for (const it of items){
     r -= (it.rate|0);
-    if (r <= 0) return String(it.name);
+    if (r <= 0){
+      return { name: String(it.name), code: String(it.__idx).padStart(2,'0') };
+    }
   }
-  return String(items[items.length - 1].name);
+  const last = items[items.length - 1];
+  return { name: String(last.name), code: String(last.__idx).padStart(2,'0') };
 }
 
 /** 結果画面を表示して「戻る」で受付へ */
@@ -1256,30 +1262,46 @@ function playLotteryVideo(){
   if(!wrap || !vid) return;
 
   // 事前に結果を決めておく（スキップ時も同じ結果を出す）
-  const winnerName = pickLotteryWinner();
+  const winner = pickLotteryWinner(); // { name, code } | null
 
   // 準備
   vid.src = LOTTERY_VIDEO_URL;
   vid.currentTime = 0;
-  vid.muted = false;          // 自動再生がブロックされる環境では後でミュート再試行
+  vid.muted = false;
   vid.controls = false;
   wrap.style.display = 'flex';
 
   const showResult = ()=>{
     try{ vid.pause(); }catch{}
-    vid.removeAttribute('src'); // バッファ解放
+    vid.removeAttribute('src');
     vid.load();
     wrap.style.display = 'none';
-    showLotteryResult(winnerName);
+
+    // Star 列に「01/02…」を送る（名称は送らない／列追加もしない）
+    if (winner && winner.code){
+      try{
+        const uid = String(lastScannedValue || '');
+        pushLog({
+          uid,
+          action: 'lottery',
+          seatNo: '',
+          method: 'auto',
+          roomPrefix: uid ? uid.slice(0,3) : '',
+          // ★/＊と同じ列（star）に "01" などを送る
+          star: winner.code
+        });
+      }catch{}
+      showLotteryResult(winner.name);
+    }else{
+      showLotteryResult(null);
+    }
   };
 
-  // 終了/エラー/手動閉じ → 結果表示へ
   vid.onended = showResult;
   vid.onerror = showResult;
   if (skip) skip.onclick = showResult;
-  wrap.onclick = (e)=>{ if(e.target === wrap) showResult(); }; // 背景クリックでも
+  wrap.onclick = (e)=>{ if(e.target === wrap) showResult(); };
 
-  // 再生（音声がブロックされたらミュートで再試行）
   vid.play().catch(()=>{
     vid.muted = true;
     vid.play().catch(()=>{ showResult(); });
@@ -2154,8 +2176,18 @@ function loadQueue(){ try{ return JSON.parse(localStorage.getItem(LOG_QUEUE_KEY)
 function saveQueue(q){ localStorage.setItem(LOG_QUEUE_KEY, JSON.stringify(q)); }
 async function pushLog(payload){
   const now = new Date();
-  // payload.star は true/false だけでなく '＊' も許容（true=★, '＊'=＊, それ以外は空）
-  const starStr = (payload.star === '＊') ? '＊' : (payload.star ? '★' : '');
+
+  // star の優先順位：
+  // 1) 文字列ならそのまま（"01"/"02"/"＊" など）
+  // 2) 真偽値 true なら "★"
+  // 3) それ以外は空
+  let starStr = '';
+  if (typeof payload.star === 'string' && payload.star.trim() !== '') {
+    starStr = payload.star.trim();
+  } else if (payload.star === true) {
+    starStr = '★';
+  }
+
   const body = new URLSearchParams({
     apikey: LOG_SHARED_KEY || '',
     uid: String(payload.uid||''),
