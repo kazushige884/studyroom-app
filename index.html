@@ -58,31 +58,17 @@
     #view-main .btn-row{
   display:flex;
   flex-direction:column;
-  gap:18px;
+  gap:16px;
   width:min(92vw, 800px);
   margin:0 auto;
-  justify-content:flex-start;
-  flex-wrap:nowrap;
   position:relative; z-index:5;
 }
-#view-main .btn-row + .btn-row{ margin-top:18px; }
+#view-main .btn-row + .btn-row{ margin-top:16px; }
   /* ボタンの幅とフォントサイズの調整（上書き） */
 #view-main #btnGoSs,
 #view-main #btnGoLottery{
-  width:50%;              /* 横幅を50%に */
-  min-height:60%;         /* 高さを60%に */
-  background:#262626;     /* 灰色15%程度 (#262626) */
-  color:#fff;             /* 文字は白にして見やすく */
-  flex: 1 1 calc(50% - var(--gap)); /* ← 2つで基準幅いっぱい（左右端が揃う） */
-  min-width: 0;
-  display:flex; align-items:center; justify-content:center;
-  white-space:nowrap;               /* ← 中で改行させない */
-  text-align:center;
-  line-height:1.2;
-  min-height:80px;
-  padding:12px 16px;
-  font-size:24pt;
-
+  background:#fff7cc;
+  color:#000;
 }
 
 /* 念押し：<br> を確実に改行として扱う */
@@ -163,16 +149,15 @@
 }
   #view-main .btn-ss,
 #view-main .btn-lottery{
-  background:#fffdd0;             /* クリーム色 */
-  color:#000;                     /* 黒文字で視認性UP */
-  margin:12px auto;               /* 中央寄せ */
-  width:240px;                    /* 実際の横幅を固定 (例:240px) */
+  background:#fff7cc;
+  color:#000;
+  margin:0 auto;
+  width:300px;
   padding:12px 36px;
-  min-height:72px;                /* 高さを現行の約60%に */
+  min-height:72px;
   display:flex;
   align-items:center;
   justify-content:center;
-
 }
   #view-main .row{display:flex;flex-direction:row;align-items:center;gap:16px;margin:12px 0;flex-wrap:wrap}
   #view-main .row label{font-size:28pt}
@@ -678,15 +663,15 @@
 /* 下2つ（スライドショー設定/抽選設定）だけサイズと色を“確定” */
 #btnGoSs,
 #btnGoLottery{
-  width:400px !important;           /* 横の長さ：実寸で指定（≒コンテナの約50%） */
-  min-height:72px !important;       /* 縦の長さ：従来120pxの約60%（=72px） */
-  background:#fff7cc !important;    /* クリーム色（灰5%より視認性高） */
+  width:300px !important;
+  min-height:72px !important;
+  background:#fff7cc !important;
   color:#000 !important;
-  margin:0 auto !important;         /* 中央寄せ（左右のズレ防止） */
+  margin:0 auto !important;
   display:flex !important;
   align-items:center !important;
   justify-content:center !important;
-  border-color:#444 !important;     /* 既存の枠線があれば少しだけ締める */
+  border-color:#444 !important;
 }
 
 /* 念のため、この2つに残っている“幅:auto/余白”系の旧指定を無効化 */
