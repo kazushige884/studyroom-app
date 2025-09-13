@@ -642,14 +642,21 @@
 }
 
 /* ==== メインメニュー：スライドショー設定＆抽選設定のサイズ/色・間隔を確定上書き ==== */
-
-/* 4ボタンの間隔を均等化（各ボタンの上下マージンを0にして、親のgapで調整） */
+/* 4ボタンの間隔を均等化（上下は基本0、2段目のみ上マージンを付与） */
 #view-main .btn-row{
   display:flex !important;
   flex-direction:column !important;
   gap:16px !important;              /* ← 4つの間隔はこれで統一 */
   width:min(92vw, 800px) !important;
-  margin:0 auto !important;
+  /* ← 個別に指定して、兄弟セレクタの margin-top を上書きできるようにする */
+  margin-left:auto !important;
+  margin-right:auto !important;
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+/* 1段目と2段目の間だけ余白を作る（最終決定権） */
+#view-main .btn-row + .btn-row{
+  margin-top:16px !important;
 }
 
 /* 上2つ（自習室開始/レイアウト作成）は従来サイズを維持しつつ中央寄せ */
