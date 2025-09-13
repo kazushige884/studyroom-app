@@ -1283,11 +1283,10 @@ function playLotteryVideo(){
         const uid = String(lastScannedValue || '');
         pushLog({
           uid,
-          action: 'lottery',
+          action: 'leave',
           seatNo: '',
           method: 'auto',
           roomPrefix: uid ? uid.slice(0,3) : '',
-          // ★/＊と同じ列（star）に "01" などを送る
           star: winner.code
         });
       }catch{}
