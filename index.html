@@ -99,18 +99,18 @@
 
 /* 「スライドショー設定」「抽選設定」— 改行せず通常表示 */
 #view-main #btnGoSs{
-  font-size: 24pt;
-  color: #000;
+  font-size: calc(24pt * 0.8);
+  color: #fff;
   position: static;
 }
 #view-main #btnGoLottery{
-  color: #000;
+  color: #fff;
   position: static;
 }
 
 /* 「抽選設定」— 擬似要素を使わず通常表示 */
 #view-main #btnGoLottery{
-  color: #000;
+  color: #fff;
   position: static;
 }
 
@@ -163,16 +163,15 @@
 }
   #view-main .btn-ss,
 #view-main .btn-lottery{
-  background:#fff;
-  color:#000;
-  margin:0;
-  width:auto;
+  background:#1f1f1f;             /* 灰色5%相当（白→薄いグレー） */
+  color:#fff;
+  margin:12px auto;               /* 中央寄せ */
+  width:50%;                      /* 横幅50% */
   padding:12px 36px;
-  min-height:80px;                /* 2/3 高さ = 80px を明示 */
+  min-height:72px;                /* 60%相当の高さ（目安） */
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:24pt;                 /* フォントサイズを明示して両者を同一に */
 }
   #view-main .row{display:flex;flex-direction:row;align-items:center;gap:16px;margin:12px 0;flex-wrap:wrap}
   #view-main .row label{font-size:28pt}
