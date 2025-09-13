@@ -655,6 +655,48 @@
     max-width: 600px;
   }
 }
+
+/* ==== メインメニュー：スライドショー設定＆抽選設定のサイズ/色・間隔を確定上書き ==== */
+
+/* 4ボタンの間隔を均等化（各ボタンの上下マージンを0にして、親のgapで調整） */
+#view-main .btn-row{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:16px !important;              /* ← 4つの間隔はこれで統一 */
+  width:min(92vw, 800px) !important;
+  margin:0 auto !important;
+}
+
+/* 上2つ（自習室開始/レイアウト作成）は従来サイズを維持しつつ中央寄せ */
+#btnGoRun,
+#btnGoLayout{
+  width:600px !important;
+  min-height:120px !important;
+  margin:0 auto !important;
+}
+
+/* 下2つ（スライドショー設定/抽選設定）だけサイズと色を“確定” */
+#btnGoSs,
+#btnGoLottery{
+  width:400px !important;           /* 横の長さ：実寸で指定（≒コンテナの約50%） */
+  min-height:72px !important;       /* 縦の長さ：従来120pxの約60%（=72px） */
+  background:#fff7cc !important;    /* クリーム色（灰5%より視認性高） */
+  color:#000 !important;
+  margin:0 auto !important;         /* 中央寄せ（左右のズレ防止） */
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-color:#444 !important;     /* 既存の枠線があれば少しだけ締める */
+}
+
+/* 念のため、この2つに残っている“幅:auto/余白”系の旧指定を無効化 */
+#view-main .btn-ss,
+#view-main .btn-lottery{
+  width:unset !important;
+  margin:0 !important;
+  min-height:unset !important;
+}
+
 </style>
 </head>
 <body>
