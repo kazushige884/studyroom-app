@@ -69,6 +69,10 @@
   /* ボタンの幅とフォントサイズの調整（上書き） */
 #view-main #btnGoSs,
 #view-main #btnGoLottery{
+  width:50%;              /* 横幅を50%に */
+  min-height:60%;         /* 高さを60%に */
+  background:#262626;     /* 灰色15%程度 (#262626) */
+  color:#fff;             /* 文字は白にして見やすく */
   flex: 1 1 calc(50% - var(--gap)); /* ← 2つで基準幅いっぱい（左右端が揃う） */
   min-width: 0;
   display:flex; align-items:center; justify-content:center;
