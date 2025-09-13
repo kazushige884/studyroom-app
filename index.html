@@ -617,6 +617,35 @@
   border-radius:10px; border:1px solid #444; background:#111; color:#fff;
   padding:10px 16px; cursor:pointer; font-weight:800;
 }
+
+/* === メインメニューの4ボタンを1列に縦積み（JSはそのまま） === */
+#view-main .btn-row{
+  display: flex;
+  flex-direction: column;        /* 横並び→縦並び */
+  gap: var(--gap);
+  width: calc(100% - 80px);      /* 上段と同じ左右ラインに揃える */
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* 4つすべてのボタンを同じ幅・高さに */
+#view-main #btnGoRun,
+#view-main #btnGoLayout,
+#view-main #btnGoSs,
+#view-main #btnGoLottery{
+  flex: none !important;         /* 既存の 1/2 幅指定を無効化 */
+  width: 100% !important;        /* 横いっぱい */
+  min-width: 0;
+  min-height: 120px;             /* 見た目をそろえる */
+}
+
+/* 小さめ画面でも縦積み固定（任意の微調整） */
+@media (max-width:980px){
+  #view-main .btn-row{
+    width: calc(100% - 40px);
+    max-width: 600px;
+  }
+}
 </style>
 </head>
 <body>
