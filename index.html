@@ -2588,7 +2588,7 @@ function primeBgmFromGesture(){
     if(!ssAudio){
       ssAudio = new Audio();
       ssAudio.crossOrigin = 'anonymous';
-      ssAudio.loop = true;
+    
     }
     if (ssAudio.__primed) return;
 
@@ -2631,17 +2631,18 @@ function startSlideShow(force=false){
 
   // BGM（複数曲：ランダム連続再生）は既存のまま
   if (ssBgmList && ssBgmList.length > 0) {
-    if (!ssAudio){
-      ssAudio = new Audio();
-      ssAudio.crossOrigin = 'anonymous';
-      ssAudio.loop = false; // 曲ごとに切替
-      ssAudio.addEventListener('ended', ()=>{ playRandomBgm(); });
-    }
-    try{ ssAudio.pause(); }catch{}
-    ssAudio.muted = false;
-    ssAudio.volume = 1;
-    playRandomBgm();
+  if (!ssAudio){
+    ssAudio = new Audio();
+    ssAudio.crossOrigin = 'anonymous';
   }
+  // 既存/新規いずれでも毎回「正しい状態」に初期化する
+  try{ ssAudio.pause(); }catch{}
+  ssAudio.loop = false;                               // ← 毎回固定
+  ssAudio.onended = ()=>{ playRandomBgm(); };         // ← 多重登録を避けて上書き
+  ssAudio.muted = false;
+  ssAudio.volume = 1;
+  playRandomBgm();
+}
 
   // 前画面IDを保存し、オーバーレイを即表示して入力を受け止める
 ssReturnToId = currentViewId();
@@ -2661,6 +2662,7 @@ showNext(true);
 }
 function playRandomBgm(){
   if (!ssBgmList || ssBgmList.length===0 || !ssAudio) return;
+  ssAudio.loop = false; // 念のため、ここでも固定
   // 直前と同じ曲にならないようにする（1曲しかない場合はそのまま）
   let idx;
   if (ssBgmList.length === 1) {
