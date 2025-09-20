@@ -2284,30 +2284,26 @@ function attachSlideExitHandlers(){
     try{
       e.preventDefault();
       e.stopPropagation();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation(); // ← 追加
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     }catch{}
     stopSlideShow(true);
+    addGhostClickGuard();    // ← ゴーストクリック抑止
     resetIdleTimer();
   };
   __onKeydownExit = (e)=>{
     try{
       e.preventDefault();
       e.stopPropagation();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation(); // ← 追加
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     }catch{}
     stopSlideShow(true);
     resetIdleTimer();
   };
 
-  // オーバーレイ自身（capture先取り）
-  ssOverlay.addEventListener('click',       __onPointerExit, true);
-  ssOverlay.addEventListener('touchstart',  __onPointerExit, { capture:true, passive:false });
-  ssOverlay.addEventListener('pointerdown', __onPointerExit, true);
-
-  // 念押し：document 全体にも（他所で捕捉されても下へ行かせない）
-  document.addEventListener('click',       __onPointerExit, true);
-  document.addEventListener('touchstart',  __onPointerExit, { capture:true, passive:false });
-  document.addEventListener('pointerdown', __onPointerExit, true);
+  // overlay 側：指を離した瞬間のみ終了
+  ssOverlay.addEventListener('pointerup', __onPointerExit, { capture:true });
+  // document 側にも
+  document.addEventListener('pointerup', __onPointerExit, true);
 
   // キー入力
   document.addEventListener('keydown', __onKeydownExit, true);
@@ -2315,20 +2311,28 @@ function attachSlideExitHandlers(){
 
 function detachSlideExitHandlers(){
   if (__onPointerExit){
-    // overlay 側
-    ssOverlay.removeEventListener('click',       __onPointerExit, true);
-    ssOverlay.removeEventListener('touchstart',  __onPointerExit, true);
-    ssOverlay.removeEventListener('pointerdown', __onPointerExit, true);
-    // document 側
-    document.removeEventListener('click',       __onPointerExit, true);
-    document.removeEventListener('touchstart',  __onPointerExit, true);
-    document.removeEventListener('pointerdown', __onPointerExit, true);
+    ssOverlay.removeEventListener('pointerup', __onPointerExit, true);
+    document.removeEventListener('pointerup', __onPointerExit, true);
     __onPointerExit = null;
   }
   if (__onKeydownExit){
     document.removeEventListener('keydown', __onKeydownExit, true);
     __onKeydownExit = null;
   }
+}
+
+// タップ終了直後にブラウザが発火する擬似 click を一度だけ潰す
+function addGhostClickGuard(){
+  const kill = (ev)=>{
+    try{
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    }catch{}
+    document.removeEventListener('click', kill, true);
+  };
+  document.addEventListener('click', kill, true);
+  setTimeout(()=>document.removeEventListener('click', kill, true), 400);
 }
 
 let ssOrder = [];        // 再生順インデックス配列（ランダム）
