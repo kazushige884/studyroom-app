@@ -2276,20 +2276,46 @@ function currentViewId(){
 // === [FIX] 終了ハンドラを一本化（クリック／タップ／キーで完全停止） ===
 let __onPointerExit = null;
 let __onKeydownExit  = null;
+function addInputFreezeGuard(ms=800){
+  const kill = (ev)=>{
+    try{
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    }catch{}
+  };
+  const opts = { capture:true, passive:false };
+  document.addEventListener('pointerdown', kill, opts);
+  document.addEventListener('touchstart',  kill, opts);
+  document.addEventListener('click',       kill, opts);
+  // 念のため mouse 系も
+  document.addEventListener('mousedown',   kill, opts);
+  document.addEventListener('mouseup',     kill, opts);
 
+  setTimeout(()=>{
+    document.removeEventListener('pointerdown', kill, opts);
+    document.removeEventListener('touchstart',  kill, opts);
+    document.removeEventListener('click',       kill, opts);
+    document.removeEventListener('mousedown',   kill, opts);
+    document.removeEventListener('mouseup',     kill, opts);
+  }, ms);
+}
 function attachSlideExitHandlers(){
   if (__onPointerExit || __onKeydownExit) return; // 二重張り防止
 
   __onPointerExit = (e)=>{
-    try{
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-    }catch{}
+  try{
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  }catch{}
+  addInputFreezeGuard(800);              // ← 800msだけ全入力を無効化
+  // overlay を“次の次フレーム”で閉じる（同一タップ系列で下が押されないように）
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
     stopSlideShow(true);
-armGhostGuard(700);      // ← 直後700msは一切のタップ/クリックを遮断
-resetIdleTimer();
-  };
+    resetIdleTimer();
+  }));
+};
   __onKeydownExit = (e)=>{
     try{
       e.preventDefault();
