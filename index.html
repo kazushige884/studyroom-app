@@ -2287,8 +2287,8 @@ function attachSlideExitHandlers(){
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     }catch{}
     stopSlideShow(true);
-    addGhostClickGuard();    // ← ゴーストクリック抑止
-    resetIdleTimer();
+armGhostGuard(700);      // ← 直後700msは一切のタップ/クリックを遮断
+resetIdleTimer();
   };
   __onKeydownExit = (e)=>{
     try{
@@ -2322,17 +2322,29 @@ function detachSlideExitHandlers(){
 }
 
 // タップ終了直後にブラウザが発火する擬似 click を一度だけ潰す
-function addGhostClickGuard(){
-  const kill = (ev)=>{
-    try{
-      ev.preventDefault();
-      ev.stopPropagation();
-      if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-    }catch{}
-    document.removeEventListener('click', kill, true);
+// 入力ロック（ghost click/直後のタップ全拒否）
+let __uiLockUntil = 0;
+let __uiGuardInstalled = false;
+
+function armGhostGuard(ms = 700){
+  __uiLockUntil = Date.now() + ms;
+  if (__uiGuardInstalled) return;
+  __uiGuardInstalled = true;
+
+  const guard = (ev)=>{
+    if (Date.now() < __uiLockUntil){
+      try{
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      }catch{}
+    }
   };
-  document.addEventListener('click', kill, true);
-  setTimeout(()=>document.removeEventListener('click', kill, true), 400);
+
+  // “次の一回のタップ”を確実に捨てるため、pointer/touch/click を捕捉
+  document.addEventListener('pointerdown', guard, true);
+  document.addEventListener('click', guard, true);
+  document.addEventListener('touchstart', guard, { capture:true, passive:false });
 }
 
 let ssOrder = [];        // 再生順インデックス配列（ランダム）
