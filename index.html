@@ -785,18 +785,24 @@
     <h1 style="font-size:200%; line-height:1.5;">抽選設定</h1>
 
     <div class="card">
-<div class="row">
-  <input id="lotteryEnabled" type="checkbox" style="margin-right:12px">
-<label for="lotteryEnabled">有効</label>
-  <label>抽選出現率</label>
-  <div class="spinwrap">
-    <button class="spinbtn" data-target="lotteryEvery" data-step="-10">−10</button>
-    <input id="lotteryEvery" type="number" value="100">
-    <button class="spinbtn" data-target="lotteryEvery" data-step="10">＋10</button>
-  </div>
-  <span>回に1回出現</span>
-</div>
+  <div class="row">
+    <input id="lotteryEnabled" type="checkbox" style="margin-right:12px">
+    <label for="lotteryEnabled">有効</label>
+    <label>抽選出現率</label>
+    <div class="spinwrap">
+      <button class="spinbtn" data-target="lotteryEvery" data-step="-10">−10</button>
+      <input id="lotteryEvery" type="number" value="100">
+      <button class="spinbtn" data-target="lotteryEvery" data-step="10">＋10</button>
     </div>
+    <span>回に1回出現</span>
+
+    <!-- ▼ 追加：最小滞在分 -->
+    <span style="margin-left:12px">※ただし学習時間が</span>
+    <input id="lotteryMinStay" type="number" min="0" step="1" value="0" style="width:7ch">
+    <span>分未満の場合は抽選は行わない</span>
+    <!-- ▲ 追加ここまで -->
+  </div>
+</div>
 
     <!-- ▼ ここから追加（チェックボックス + アタリ01〜10） -->
 <div class="card" aria-label="アタリ拡張設定">
@@ -1310,12 +1316,42 @@ function playLotteryVideo(){
 }
 
 /** 通常退室後に抽選動画再生を評価 */
-function tryPlayLotteryAfterNormalLeave(){
+function tryPlayLotteryAfterNormalLeave(uid){
   const s = loadLotterySettingsRaw();
-  const enabled = !!s.enabled;
-  const every   = Number.isFinite(s.every) ? s.every : 1;
-  if(!enabled) return;              // 有効でなければ終了
-  if(shouldTriggerLottery(every)){  // 出現モード
+  const enabled   = !!s.enabled;
+  const every     = Number.isFinite(s.every) ? s.every : 1;
+  const minStay   = Number.isFinite(s.minStayMin) ? Math.max(0, s.minStayMin) : 0;
+
+  if (!enabled) return;
+
+  // ▼ 最小滞在分チェック（uid の直近レコードから inAt を取得）
+  if (minStay > 0 && uid){
+    try{
+      const arr = loadHistory();
+      let inAtIso = null;
+      for (let i = arr.length - 1; i >= 0; i--){
+        const r = arr[i];
+        if (String(r.uid) === String(uid) && r.inAt){ inAtIso = r.inAt; break; }
+      }
+      if (inAtIso){
+        const inAt = new Date(inAtIso);
+        const now  = new Date();
+        const stayedMin = Math.floor((now - inAt) / 60000);
+        if (stayedMin < minStay){
+          // 条件未達 → 抽選しない
+          return;
+        }
+      } else {
+        // 入室時刻が取得できない場合は安全側で抽選をスキップ
+        return;
+      }
+    }catch{
+      return;
+    }
+  }
+
+  // ▼ 出現率の評価
+  if (shouldTriggerLottery(every)){
     playLotteryVideo();
   }
 }
@@ -1328,6 +1364,7 @@ function collectLotterySettings(){
   const s = {
     enabled: $('lotteryEnabled').checked,
     every: parseInt($('lotteryEvery').value, 10) || 1,
+    minStayMin: Math.max(0, parseInt(($('lotteryMinStay')?.value ?? '0'), 10) || 0),
     items: []
   };
   for (let i = 1; i <= 10; i++) {
@@ -1335,7 +1372,6 @@ function collectLotterySettings(){
     s.items.push({
       on: !!$('lotOn'+idx2)?.checked,
       name: ($('lotName'+idx2)?.value ?? ''),
-      // 「出現率」を「本数」に変更済みだが、既存ID lotRateXX を流用
       rate: parseInt($('lotRate'+idx2)?.value ?? '0', 10) || 0
     });
   }
@@ -1347,6 +1383,10 @@ function applyLotterySettings(s){
   try{
     $('lotteryEnabled').checked = !!s.enabled;
     $('lotteryEvery').value = Number.isFinite(s.every) && s.every >= 1 ? s.every : 1;
+    if ($('lotteryMinStay')) {
+      const v = Number.isFinite(s.minStayMin) && s.minStayMin >= 0 ? s.minStayMin : 0;
+      $('lotteryMinStay').value = v;
+    }
     if (Array.isArray(s.items)){
       for (let i = 1; i <= 10; i++){
         const idx2 = String(i).padStart(2,'0');
@@ -1356,7 +1396,6 @@ function applyLotterySettings(s){
         if ($('lotRate'+idx2)) $('lotRate'+idx2).value   = Number.isFinite(it.rate) ? it.rate : 0;
       }
     }
-    // 既存の比率表示更新（名称は変わったが再計算は動かしておく）
     if (typeof updateLotPercentage === 'function') updateLotPercentage();
   }catch(e){
     alert('設定の反映に失敗しました: ' + (e?.message || e));
@@ -1496,8 +1535,8 @@ function setupLotteryAutosave(){
   if (__lotteryAutosaveInited) return;
   __lotteryAutosaveInited = true;
 
-  // 監視対象：有効フラグ＆出現率
-  const baseIds = ['lotteryEnabled', 'lotteryEvery'];
+  // 監視対象：有効フラグ＆出現率＆最小滞在分
+  const baseIds = ['lotteryEnabled', 'lotteryEvery', 'lotteryMinStay'];
   // 監視対象：アタリ01〜10（チェック・名称・本数）
   for (let i = 1; i <= 10; i++){
     const idx2 = String(i).padStart(2, '0');
@@ -1508,13 +1547,10 @@ function setupLotteryAutosave(){
     const el = document.getElementById(id);
     if (!el) return;
 
-    // 入力系は input/change で拾う
     const handler = ()=>{
-      updateLotPercentage(); // 表示も即時更新
-      autosaveLottery();     // デバウンス保存
+      updateLotPercentage();
+      autosaveLottery();
     };
-
-    // 型ごとに最適イベントを張る（両方張ってもOK）
     el.addEventListener('input', handler);
     el.addEventListener('change', handler);
   });
@@ -1994,7 +2030,7 @@ if (confirmOkBtn) confirmOkBtn.addEventListener('click', ()=>{
       __lastLeaveSeatNo = seatNo;
       seatState[seatNo] = false;
       saveSeatState();
-      tryPlayLotteryAfterNormalLeave();  // ★ 通常退室後：抽選動画の判定＆再生
+      tryPlayLotteryAfterNormalLeave(uid);  // ★ 通常退室後：抽選動画の判定＆再生（最小滞在分チェック対応）
       gotoRun();
     }
     
